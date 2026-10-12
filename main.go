@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"path/filepath"
@@ -171,7 +172,10 @@ func (a *App) emit(snap *Snapshot, opts Options, stateDir string, salt []byte) e
 			fps[h.Fingerprint] = true
 		}
 	}
-	for _, out := range [][]byte{history, stdout, report} {
+	// html/template escapes characters such as + (&#43;) that secrets contain,
+	// which would split a value across candidates; check the unescaped text too.
+	unescaped := []byte(html.UnescapeString(string(report)))
+	for _, out := range [][]byte{history, stdout, report, unescaped} {
 		if err := checkLeak(out, salt, fps); err != nil {
 			return err
 		}

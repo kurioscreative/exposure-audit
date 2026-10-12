@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -235,5 +236,30 @@ func TestSnapshotFilesNeverCollide(t *testing.T) {
 	}
 	if n := len(fx.historyFiles()); n != 3 {
 		t.Errorf("%d snapshot files after 3 runs in one second", n)
+	}
+}
+
+// Text only the report shows (live titles beyond the summary's top 5) is
+// still checked when html/template escapes characters inside the secret.
+func TestLeakCheckSeesThroughHTMLEscaping(t *testing.T) {
+	fx := newFixture(t)
+	val := fx.secret("", 20) + "+" + fx.secret("", 20)
+	cs := testCollector{"live", func(_ context.Context, env *Env) ([]Finding, error) {
+		var fs []Finding
+		for i := range 6 {
+			f := fnd("k", fmt.Sprintf("~/f%d", i), Propagation, fmt.Sprintf("fp%d", i))
+			if i == 5 {
+				f.Gate = Gated // sixth item: report only
+				f.LiveTitle = "item " + val
+				f.Hits = []Hit{{Fingerprint: env.Fingerprint(NewSecret([]byte(val))), Class: Propagation}}
+			}
+			fs = append(fs, f)
+		}
+		return fs, nil
+	}}
+	fx.stubs["/usr/bin/open"] = func([]string) ([]byte, int) { return nil, 0 }
+	r := fx.runApp([]Collector{cs}, "-open")
+	if r.code != 1 || !strings.Contains(r.stderr, "output-leak") {
+		t.Errorf("exit %d stderr %q; want the report withheld", r.code, r.stderr)
 	}
 }
