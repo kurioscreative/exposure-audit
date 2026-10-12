@@ -70,3 +70,23 @@ func TestURLCredentialClassByHost(t *testing.T) {
 		}
 	}
 }
+
+func TestPrivateKeysAreFingerprintedByBody(t *testing.T) {
+	fx := newFixture(t)
+	block := func() string {
+		return "-----BEGIN RSA " + "PRIVATE KEY-----\n" + fx.secret("MII", 60) + "\n-----END RSA " + "PRIVATE KEY-----"
+	}
+	a, b := extractSecrets([]byte("KEY_A=\""+block()+"\"\n")), extractSecrets([]byte(block()))
+	env := fx.env()
+	if len(a) == 0 || len(b) == 0 || env.Fingerprint(a[0].Value) == env.Fingerprint(b[0].Value) {
+		t.Errorf("two different keys share a fingerprint")
+	}
+}
+
+func TestEmptyValueDoesNotTakeTheNextLine(t *testing.T) {
+	fx := newFixture(t)
+	ms := extractSecrets([]byte("STRIPE_SECRET=\nDATABASE_HOST_X=" + fx.secret("", 24) + "\n"))
+	if len(ms) != 0 {
+		t.Errorf("got %d matches; an empty secret variable captured the next line", len(ms))
+	}
+}

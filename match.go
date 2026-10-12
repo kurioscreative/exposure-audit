@@ -36,7 +36,10 @@ var tokenPatterns = []tokenPattern{
 	{Service, regexp.MustCompile(`sk_live_[A-Za-z0-9]{20,}`)},
 	{Service, regexp.MustCompile(`hf_[A-Za-z0-9]{30,}`)},
 	{Service, regexp.MustCompile(`SG\.[A-Za-z0-9_\-]{16,}\.[A-Za-z0-9_\-]{16,}`)},
-	{Service, regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`)},
+	// The whole key block, so two keys are two credentials; the header alone
+	// is the same for every key. A block with no END line (truncated, or a
+	// single escaped line cut short) falls back to the header plus body.
+	{Service, regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----(?:[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----|[^-]{0,200})`)},
 }
 
 // secretName is a coarse substring prefilter for kvRx. It over-matches
@@ -47,7 +50,7 @@ const secretName = `(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_\-]?KEY|ACCESS[_\-]?KEY
 var (
 	// secretNameRx is the substring prefilter alone. Use isSecretName for decisions.
 	secretNameRx = regexp.MustCompile(`(?i)` + secretName)
-	kvRx         = regexp.MustCompile(`(?i)["']?([A-Za-z0-9_.\-]*` + secretName + `[A-Za-z0-9_.\-]*)["']?\s*[:=]\s*["']?([^\s"',;}{]{8,})`)
+	kvRx         = regexp.MustCompile(`(?i)["']?([A-Za-z0-9_.\-]*` + secretName + `[A-Za-z0-9_.\-]*)["']?[ \t]*[:=][ \t]*["']?([^\s"',;}{]{8,})`) // [ \t], not \s: an empty NAME= must not take the next line
 	// Short placeholder words must be followed by a non-alphanumeric or the
 	// end. As bare prefixes they also rejected random secrets that happen to
 	// start with "xxx", "True" or "Null", which made fixture tests flaky.
