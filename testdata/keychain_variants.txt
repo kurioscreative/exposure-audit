@@ -1,0 +1,161 @@
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "genp"
+attributes:
+    0x00000007 <blob>="gh:github.com"
+    "acct"<blob>="fixture-octo"
+    "cdat"<timedate>=0x32303234303130313132303030305A00  "20240101120000Z\000"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "svce"<blob>="gh:github.com"
+access: 3 entries
+    entry 0:
+        authorizations (1): encrypt
+        don't-require-password
+        description: gh:github.com
+        applications: <null>
+    entry 1:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: gh:github.com
+        applications (1):
+            0: /usr/bin/security (OK)
+    entry 2:
+        authorizations (1): partition_id
+        don't-require-password
+        description: 3C3F786D6C2076657273696F6E3D22312E302220656E636F64696E673D225554462D38223F3E0A3C21444F435459504520706C697374205055424C494320222D2F2F4170706C652F2F44544420504C49535420312E302F2F454E222022687474703A2F2F7777772E6170706C652E636F6D2F445444732F50726F70657274794C6973742D312E302E647464223E0A3C706C6973742076657273696F6E3D22312E30223E0A3C646963743E0A093C6B65793E506172746974696F6E733C2F6B65793E0A093C61727261793E0A09093C737472696E673E6170706C652D746F6F6C3A3C2F737472696E673E0A09093C737472696E673E6170706C653A3C2F737472696E673E0A093C2F61727261793E0A3C2F646963743E0A3C2F706C6973743E0A
+        applications: <null>
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "genp"
+attributes:
+    0x00000007 <blob>="Fixture Sync"
+    "acct"<blob>="fixture-sync"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "svce"<blob>="Fixture Sync"
+access: 2 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: Fixture Sync
+        applications (1):
+            0: /usr/bin/security (OK)
+    entry 1:
+        authorizations (1): partition_id
+        don't-require-password
+        description: 3C3F786D6C2076657273696F6E3D22312E302220656E636F64696E673D225554462D38223F3E0A3C21444F435459504520706C697374205055424C494320222D2F2F4170706C652F2F44544420504C49535420312E302F2F454E222022687474703A2F2F7777772E6170706C652E636F6D2F445444732F50726F70657274794C6973742D312E302E647464223E0A3C706C6973742076657273696F6E3D22312E30223E0A3C646963743E0A093C6B65793E506172746974696F6E733C2F6B65793E0A093C61727261793E0A09093C737472696E673E7465616D69643A4649585455524530313C2F737472696E673E0A093C2F61727261793E0A3C2F646963743E0A3C2F706C6973743E0A
+        applications: <null>
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "genp"
+attributes:
+    "acct"<blob>="fixture-chat"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "svce"<blob>="Fixture Chat Safe Storage"
+access: 1 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: Fixture Chat Safe Storage
+        applications (1):
+            0: /Applications/Fixture Chat.app (OK)
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "genp"
+attributes:
+    "acct"<blob>="fixture-x"
+    "svce"<blob>="fixture-encrypt-only"
+access: 1 entries
+    entry 0:
+        authorizations (1): encrypt
+        don't-require-password
+        description: fixture-encrypt-only
+        applications: <null>
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "genp"
+attributes:
+    "acct"<blob>="fixture-aws"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "svce"<blob>="aws-vault fixture"
+access: 1 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: aws-vault fixture
+        applications: <null>
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "inet"
+attributes:
+    0x00000007 <blob>="github.com"
+    "acct"<blob>="fixture-octo"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "srvr"<blob>="github.com"
+    "ptcl"<blob>="htps"
+access: 2 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: github.com
+        applications (1):
+            0: /Library/Developer/CommandLineTools/usr/libexec/git-core/git-credential-osxkeychain (OK)
+    entry 1:
+        authorizations (1): partition_id
+        don't-require-password
+        description: 3C3F786D6C2076657273696F6E3D22312E302220656E636F64696E673D225554462D38223F3E0A3C21444F435459504520706C697374205055424C494320222D2F2F4170706C652F2F44544420504C49535420312E302F2F454E222022687474703A2F2F7777772E6170706C652E636F6D2F445444732F50726F70657274794C6973742D312E302E647464223E0A3C706C6973742076657273696F6E3D22312E30223E0A3C646963743E0A093C6B65793E506172746974696F6E733C2F6B65793E0A093C61727261793E0A09093C737472696E673E6170706C652D746F6F6C3A3C2F737472696E673E0A093C2F61727261793E0A3C2F646963743E0A3C2F706C6973743E0A
+        applications: <null>
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "inet"
+attributes:
+    0x00000007 <blob>="bitbucket.org"
+    "acct"<blob>="fixture-bb"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "srvr"<blob>="bitbucket.org"
+access: 1 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: bitbucket.org
+        applications (1):
+            0: /opt/homebrew/Cellar/git/2.50.0/libexec/git-core/git-credential-osxkeychain (OK)
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "inet"
+attributes:
+    0x00000007 <blob>="Docker Credentials"
+    "acct"<blob>="fixture-docker"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "srvr"<blob>="index.docker.io"
+access: 1 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: Docker Credentials
+        applications (2):
+            0: /Applications/Docker.app/Contents/Resources/bin/docker-credential-desktop (OK)
+            1: /usr/local/bin/docker-credential-desktop (OK)
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: "genp"
+attributes:
+    "acct"<blob>="fixture-tool"
+    "mdat"<timedate>=0x32303235303330313132303030305A00  "20250301120000Z\000"
+    "svce"<blob>="fixture-tool-item"
+access: 2 entries
+    entry 0:
+        authorizations (6): decrypt derive export_clear export_wrapped mac sign
+        don't-require-password
+        description: fixture-tool-item
+        applications (1):
+            0: /usr/local/bin/fixture-tool (OK)
+    entry 1:
+        authorizations (1): partition_id
+        don't-require-password
+        description: 3C3F786D6C2076657273696F6E3D22312E302220656E636F64696E673D225554462D38223F3E0A3C21444F435459504520706C697374205055424C494320222D2F2F4170706C652F2F44544420504C49535420312E302F2F454E222022687474703A2F2F7777772E6170706C652E636F6D2F445444732F50726F70657274794C6973742D312E302E647464223E0A3C706C6973742076657273696F6E3D22312E30223E0A3C646963743E0A093C6B65793E506172746974696F6E733C2F6B65793E0A093C61727261793E0A09093C737472696E673E7465616D69643A4649585455524530323C2F737472696E673E0A093C2F61727261793E0A3C2F646963743E0A3C2F706C6973743E0A
+        applications: <null>
+keychain: "/Users/fixture/Library/Keychains/login.keychain-db"
+version: 512
+class: 0x80001000
+attributes:
+    "alis"<blob>="fixture cert"
