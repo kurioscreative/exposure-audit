@@ -119,12 +119,18 @@ const snapshotSchema = 1
 
 // Snapshot is one run, as written to history and printed by -json.
 type Snapshot struct {
-	Schema     int               `json:"schema"`
-	Version    string            `json:"version"`
-	Time       time.Time         `json:"time"`
-	Collectors map[string]Status `json:"collectors"`
-	Errors     []CollectorError  `json:"errors"`
-	Findings   []Finding         `json:"findings"`
+	Schema         int               `json:"schema"`
+	Version        string            `json:"version"`
+	Time           time.Time         `json:"time"`
+	Context        Context           `json:"context"`
+	FullDiskAccess string            `json:"full_disk_access"` // yes, no or unknown (inferred in M2)
+	Total          float64           `json:"total"`
+	Collectors     map[string]Status `json:"collectors"`
+	Errors         []CollectorError  `json:"errors"`
+	Findings       []Finding         `json:"findings"`
+	Credentials    []Credential      `json:"credentials"`
+	Items          []Item            `json:"items"`
+	Diff           *Diff             `json:"diff,omitempty"`
 }
 
 func sortedKeys[V any](m map[string]V) []string {

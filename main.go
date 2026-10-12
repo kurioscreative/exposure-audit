@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -95,14 +97,26 @@ func (a *App) Main(args []string) int {
 	if collectors == nil {
 		collectors = defaultCollectors(opts)
 	}
+	launch := launchContext(context.Background(), a.Env)
+	fda := "unknown"
 	res := runCollectors(collectors, a.Env, a.Deadline)
 	snap := &Snapshot{
-		Schema:     snapshotSchema,
-		Version:    version,
-		Time:       a.Env.Now.UTC(),
-		Collectors: res.Statuses,
-		Errors:     res.Errors,
-		Findings:   res.Findings,
+		Schema:         snapshotSchema,
+		Version:        version,
+		Time:           a.Env.Now.UTC(),
+		Context:        launch,
+		FullDiskAccess: fda,
+		Collectors:     res.Statuses,
+		Errors:         res.Errors,
+		Findings:       res.Findings,
+	}
+	sortFindings(snap.Findings)
+	snap.Credentials, snap.Items, snap.Total = score(snap.Findings)
+	if fda == "yes" {
+		snap.Items = append([]Item{pinnedFDAItem(launch.App)}, snap.Items...)
+	}
+	if prev := previousSnapshot(stateDir, launch.Key); prev != nil {
+		snap.Diff = diffSnapshots(prev, snap)
 	}
 
 	code := 0
@@ -178,3 +192,10 @@ func (a *App) openReport(stateDir string, report []byte) {
 }
 
 func defaultCollectors(Options) []Collector { return nil }
+
+// sortFindings gives findings a stable order regardless of collector timing.
+func sortFindings(fs []Finding) {
+	slices.SortFunc(fs, func(a, b Finding) int {
+		return cmp.Or(cmp.Compare(a.Location, b.Location), cmp.Compare(a.Kind, b.Kind), cmp.Compare(a.ID, b.ID))
+	})
+}
