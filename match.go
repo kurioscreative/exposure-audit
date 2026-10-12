@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"regexp"
 	"slices"
 	"strings"
@@ -38,9 +39,13 @@ var tokenPatterns = []tokenPattern{
 	{Service, regexp.MustCompile(`-----BEGIN [A-Z ]*PRIVATE KEY-----`)},
 }
 
+// secretName is a coarse substring prefilter for kvRx. It over-matches
+// (author, tokenizer, passwordless); isSecretName decides on word
+// boundaries (M3).
 const secretName = `(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_\-]?KEY|ACCESS[_\-]?KEY|PRIVATE[_\-]?KEY|CREDENTIAL|AUTH)`
 
 var (
+	// secretNameRx is the substring prefilter alone. Use isSecretName for decisions.
 	secretNameRx  = regexp.MustCompile(`(?i)` + secretName)
 	kvRx          = regexp.MustCompile(`(?i)["']?([A-Za-z0-9_.\-]*` + secretName + `[A-Za-z0-9_.\-]*)["']?\s*[:=]\s*["']?([^\s"',;}{]{8,})`)
 	placeholderRx = regexp.MustCompile(`(?i)^(?:\$|<|\{\{|%|your|xxx+|changeme|example|placeholder|todo|none|null|true|false|undefined|password|secret|\*+)`)
@@ -60,6 +65,134 @@ func looksReal(v []byte) bool {
 		distinct[r] = true
 	}
 	return len(distinct) >= 5
+}
+
+// nameWords splits a key into lowercase words on '_', '-', '.', and camelCase
+// boundaries: npmAuthToken → npm auth token, APIKey → api key.
+func nameWords(name string) []string {
+	var words []string
+	var cur []rune
+	rs := []rune(name)
+	flush := func() {
+		if len(cur) > 0 {
+			words = append(words, strings.ToLower(string(cur)))
+			cur = cur[:0]
+		}
+	}
+	isUpper := func(r rune) bool { return r >= 'A' && r <= 'Z' }
+	isLower := func(r rune) bool { return r >= 'a' && r <= 'z' }
+	for i, r := range rs {
+		switch {
+		case r == '_' || r == '-' || r == '.' || r == ' ':
+			flush()
+			continue
+		case isUpper(r) && i > 0 && (isLower(rs[i-1]) || rs[i-1] >= '0' && rs[i-1] <= '9'):
+			flush() // fooBar, OAuth2Token
+		case isUpper(r) && i > 0 && isUpper(rs[i-1]) && i+1 < len(rs) && isLower(rs[i+1]):
+			flush() // APIKey
+		}
+		cur = append(cur, r)
+	}
+	flush()
+	return words
+}
+
+// secretWords are whole words that mark a secret. A word may also end in one
+// (dbpassword, authtoken, apikey), but "auth" must stand alone so oauth,
+// author and authority do not match.
+var (
+	secretWords    = []string{"token", "tokens", "secret", "secrets", "password", "passwords", "passwd", "credential", "credentials", "auth", "apikey", "accesskey", "privatekey"}
+	secretSuffixes = []string{"token", "secret", "password", "passwd", "credential", "credentials", "apikey", "accesskey", "privatekey"}
+	secretPairs    = [][2]string{{"api", "key"}, {"access", "key"}, {"private", "key"}}
+	// A name ending in one of these describes a secret rather than holding
+	// one: TOKEN_EXPIRY, PASSWORD_MIN_LENGTH, AUTH_PROVIDER, SECRET_NAME.
+	metadataWords = []string{"url", "uri", "endpoint", "domain", "host", "hostname", "port", "expiry", "expires", "expiration",
+		"ttl", "type", "name", "id", "file", "path", "dir", "length", "len", "min", "max", "policy", "provider", "method",
+		"mode", "header", "prefix", "enabled", "enable", "version", "timeout", "issuer", "audience", "scope", "scopes",
+		"helper", "sock", "socket", "home", "store", "storage", "env", "location", "format", "algorithm", "strategy", "count", "size"}
+)
+
+// isSecretName reports whether a key names a secret value, on word
+// boundaries (M3): AUTH_TOKEN, _auth, _authToken, apiKey, db_password, but
+// not author, OAUTH_CALLBACK, tokenizer, passwordless or TOKEN_EXPIRY.
+func isSecretName(name string) bool {
+	words := nameWords(name)
+	if len(words) == 0 || slices.Contains(metadataWords, words[len(words)-1]) {
+		return false
+	}
+	for i, w := range words {
+		if slices.Contains(secretWords, w) {
+			return true
+		}
+		for _, suf := range secretSuffixes {
+			if strings.HasSuffix(w, suf) {
+				return true
+			}
+		}
+		for _, p := range secretPairs {
+			if w == p[0] && i+1 < len(words) && words[i+1] == p[1] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// entropyFloor is the minimum Shannon entropy, in bits per character, for a
+// value matched by its name only. Known token formats are exempt. Over
+// 20,000 draws of random alphanumerics the lowest entropy was 3.50 at 24
+// characters, 3.18 at 20 and 2.95 at 16. Dummy values such as hunter2hunter2
+// (2.81) and test1234test1234 (2.75) fall under it. In the corpus test 3.0
+// is the lowest floor that keeps no false positive; 3.5 is also clean there
+// but would drop short random values and passwords like Summer2024! (3.10),
+// and 4.0 drops hex and UUID keys. TestEntropyFloorRates prints the rates.
+const entropyFloor = 3.0
+
+// entropy is the Shannon entropy of v in bits per byte.
+func entropy(v []byte) float64 {
+	var counts [256]int
+	for _, b := range v {
+		counts[b]++
+	}
+	h := 0.0
+	for _, n := range counts {
+		if n > 0 {
+			p := float64(n) / float64(len(v))
+			h -= p * math.Log2(p)
+		}
+	}
+	return h
+}
+
+// wordShaped values are lowercase words joined by separators, with no digits
+// or capitals: development, github-oauth, authorization_code. Per-character
+// entropy cannot reject them (authorization_code scores 3.57, above an MD5
+// hex digest at 3.39), and real generated secrets are almost never shaped so.
+// The cost: an all-lowercase passphrase such as correct-horse-battery-staple
+// is missed.
+func wordShaped(v []byte) bool {
+	for _, b := range v {
+		if !(b >= 'a' && b <= 'z' || b == '-' || b == '_' || b == '.') {
+			return false
+		}
+	}
+	return true
+}
+
+// plausibleByName applies the checks for a value matched only by its name
+// or its position in a URL: not a placeholder, not a path or URL, above the
+// entropy floor, not a plain word.
+func plausibleByName(v []byte) bool { return plausibleAt(v, entropyFloor) }
+
+func plausibleAt(v []byte, floor float64) bool {
+	return looksReal(v) && !hasAnyPrefix(v, "/", "~", "http://", "https://") &&
+		entropy(v) >= floor && !wordShaped(v)
+}
+
+// nameOnlySecret is the check for a NAME=value pair whose value matches no
+// known token format, such as an environment variable.
+func nameOnlySecret(name string, v []byte) bool {
+	return isSecretName(name) && plausibleByName(v)
 }
 
 // Name rules match whole segments of a name split on '_', '-' and '.', so
@@ -161,13 +294,15 @@ func extractSecrets(text []byte) []Match {
 	}
 	for _, sm := range kvRx.FindAllSubmatch(text, -1) {
 		name, val := sm[1], sm[2]
-		if !looksReal(val) || hasAnyPrefix(val, "/", "~", "http://", "https://") {
+		if !nameOnlySecret(string(name), val) {
 			continue
 		}
 		m.add(val, classForName(string(name)), string(name))
 	}
+	// URL passwords are matched by position, not format, so they get the
+	// same checks as name-only values: postgres://app:devpass@db is dropped.
 	for _, sm := range urlCredRx.FindAllSubmatch(text, -1) {
-		if looksReal(sm[2]) {
+		if plausibleByName(sm[2]) {
 			m.add(sm[2], classForURL(string(sm[3]), string(sm[1])), string(sm[1]))
 		}
 	}
