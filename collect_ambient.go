@@ -99,11 +99,12 @@ func envMatches(name string, val []byte) []Match {
 		}
 	}
 	for _, sm := range urlCredRx.FindAllSubmatch(val, -1) {
-		if looksReal(sm[2]) {
+		if plausibleByName(sm[2]) { // same value checks as extractSecrets (M3)
+
 			m.add(sm[2], classForURL(string(sm[3]), name), name)
 		}
 	}
-	if len(m.out) == 0 && secretNameRx.MatchString(name) && looksReal(val) && !hasAnyPrefix(val, "/", "~") {
+	if len(m.out) == 0 && nameOnlySecret(name, val) {
 		m.add(val, nameClass, name)
 	}
 	return m.out
