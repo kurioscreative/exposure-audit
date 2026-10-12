@@ -27,7 +27,9 @@ var tokenPatterns = []tokenPattern{
 	{Propagation, regexp.MustCompile(`npm_[A-Za-z0-9]{36}`)},
 	{Propagation, regexp.MustCompile(`pypi-AgEI[A-Za-z0-9_\-]{40,}`)},
 	{Propagation, regexp.MustCompile(`glpat-[A-Za-z0-9_\-]{20,}`)},
-	{Cloud, regexp.MustCompile(`A[KS]IA[0-9A-Z]{16}`)},
+	// No AWS access key ID (AKIA/ASIA) pattern: the ID is an identifier, and
+	// counting it made one key pair two credentials that never merged with
+	// the same pair in ~/.aws/credentials (A-52). The secret key is the credential.
 	{Cloud, regexp.MustCompile(`AIza[0-9A-Za-z_\-]{35}`)},
 	{Cloud, regexp.MustCompile(`dop_v1_[a-f0-9]{64}`)},
 	{Service, regexp.MustCompile(`sk-ant-[A-Za-z0-9_\-]{20,}`)},

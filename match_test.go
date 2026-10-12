@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -88,5 +89,14 @@ func TestEmptyValueDoesNotTakeTheNextLine(t *testing.T) {
 	ms := extractSecrets([]byte("STRIPE_SECRET=\nDATABASE_HOST_X=" + fx.secret("", 24) + "\n"))
 	if len(ms) != 0 {
 		t.Errorf("got %d matches; an empty secret variable captured the next line", len(ms))
+	}
+}
+
+// A-52: one AWS key pair is one credential: the secret key, not the ID.
+func TestAWSKeyPairIsOneCredential(t *testing.T) {
+	fx := newFixture(t)
+	text := "AWS_ACCESS_KEY_ID=AKIA" + strings.ToUpper(randomAlnum(16)) + "\nAWS_SECRET_ACCESS_KEY=" + fx.secret("", 40) + "\n"
+	if ms := extractSecrets([]byte(text)); len(ms) != 1 || ms[0].Name != "AWS_SECRET_ACCESS_KEY" || ms[0].Class != Cloud {
+		t.Errorf("matches %+v; want only the secret key, class cloud", ms)
 	}
 }
