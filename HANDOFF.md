@@ -327,6 +327,9 @@ Also run `go vet` and `gofmt -l` in the test script. The whole suite should fini
   - Sweep filenames, service class: `config/master.key`, `config/credentials/*.key` (Rails). Whole-file value, presence-style fingerprint of the content.
   - Credentials embedded in URLs ([A-20](REVIEW.md#a-20)): one pattern, `[a-z][a-z0-9+.-]*://[^:/\s@]+:(<secret>[^@\s]+)@`, applied to environment values (including `*_URL`, which `ENV_SKIP` currently drops), shell files, dotenv files, and `.git/config` of every repository the sweep passes (the sweep skips `.git` otherwise). Class by host: GitHub, GitLab, npm or PyPI hosts are propagation; otherwise by variable name; otherwise generic.
   - SSH agents named by `IdentityAgent` in `~/.ssh/config`, not only `$SSH_AUTH_SOCK` ([A-22](REVIEW.md#a-22)).
+  - A known file's class is a floor: a recognised token format inside it raises the class, so a `ghp_` token in `.netrc` is propagation ([A-55](REVIEW.md#a-55)).
+  - Drop the AWS access key ID pattern (`A[KS]IA…`) from `TOKEN_RX`: the ID is an identifier, and the secret key is the credential ([A-52](REVIEW.md#a-52)).
+  - Environment findings use a fixed location per class, `environment (<class>)`, so the diff detects rotation ([A-46](REVIEW.md#a-46)).
   - Class-name rules need token boundaries ([A-17](REVIEW.md#a-17)): `PROP_NAME_RX` matches `GH_` inside `HIGH_WATER_TOKEN`. Match names split on `_`, `-` and `.`.
   - Agent tokens (decision 11): a secret-like name whose first segment is `CLAUDE_CODE`, `CLAUDECODE`, `CODEX`, `CURSOR`, `GEMINI_CLI`, `AIDER`, `GOOSE` or `WINDSURF` is class `agent`. Fix text: "Coding-agent sessions pass this token to every command they run, including package installs. Find out what it authorizes, and run installs from a plain terminal or a sandbox."
   - `REACH_TARGETS` labels browser and app folders under `Application Support` as "open". macOS 27 reportedly blocks some of them without a prompt (section 13, [R-04](REVIEW.md#r-04)). Keep measuring; drop the label column.
@@ -413,7 +416,7 @@ Many tools keep nothing readable on disk but hand the token to any caller who as
 - **gcloud and AWS SSO:** configuration only (an active gcloud account in `~/.config/gcloud`, `sso_session` in `~/.aws/config`), medium confidence. Their caches are already covered by the known-file and AWS collectors.
 - Rotation for these comes from `mdat`.
 
-Acceptance: fixture Keychain dumps plus configs produce the enriched findings above, with no change to the total compared with the plain Keychain findings; the subprocess test confirms no helper is executed.
+Acceptance: fixture Keychain dumps plus configs produce the enriched findings above. Enrichment adds no findings and counts nothing twice; it may change an item's class, and so the total, where the class rules above differ from the plain Keychain heuristic, such as Bitbucket servers ([A-44](REVIEW.md#a-44)). The subprocess test confirms no helper is executed.
 
 ### M5. macOS validation (Glenn)
 

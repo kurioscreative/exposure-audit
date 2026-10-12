@@ -14,7 +14,7 @@ The handoff is the spec. This file records why the spec changed, what is still u
 | Status     | Meaning                                              |
 | ---------- | ---------------------------------------------------- |
 | `open`     | Raised, not yet in HANDOFF.md, no decision           |
-| `decide`   | Needs Glenn; the HANDOFF section 9 question is given |
+| `decide`   | Needs Glenn; the question is in HANDOFF §9 or, for rows added during the build, in the row itself |
 | `spec`     | Written into HANDOFF.md, not built                   |
 | `built`    | Implemented, with a test that passes on Linux        |
 | `verified` | Built, and confirmed on Glenn's Mac                  |
@@ -34,7 +34,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | M1 core                     | done        | —                                                               |
 | M2 collector parity         | built       | Keychain classifier is provisional until Glenn's sanitized sample ([R-07](#r-07)) |
 | M3 matcher precision        | built       | —                                                               |
-| M4 helper inference         | built       | Provisional with the Keychain parser; [A-44](#a-44), [A-45](#a-45) |
+| M4 helper inference         | built       | Provisional with the Keychain parser; [A-45](#a-45) |
 | M5 macOS validation (Go)    | ready       | Glenn                                                           |
 | M6 content sweep            | post-MVP    | [Decision 20](HANDOFF.md#2-decisions-already-made)                                                     |
 
@@ -72,6 +72,13 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | 2026-10-12 | Linux evidence for `built` comes from `./test.sh` in the `golang:1.26` Docker image              | —                | —          |
 | 2026-10-12 | An output withheld by the leak check exits 1                                                    | [18](HANDOFF.md#2-decisions-already-made) | [A-26](#a-26), [A-31](#a-31) |
 | 2026-10-12 | Build the Keychain parser and M4 against the §12 sample, then refit to Glenn's sanitized dump   | —                | [R-07](#r-07)       |
+| 2026-10-12 | Accept the M3 entropy floor (3.0 bits/char) and word-shape rule                                 | —                | [A-43](#a-43)       |
+| 2026-10-12 | M4 enrichment may change class and total; it never adds findings or counts twice                | —                | [A-44](#a-44)       |
+| 2026-10-12 | Environment findings: fixed location per class                                                  | —                | [A-46](#a-46)       |
+| 2026-10-12 | AWS access key IDs are not credentials                                                          | [7](HANDOFF.md#2-decisions-already-made) | [A-52](#a-52)       |
+| 2026-10-12 | Keychain tool paths live-only; Keychain SlotID adds class, protocol, port and path              | [16](HANDOFF.md#2-decisions-already-made) | [A-53](#a-53), [A-54](#a-54) |
+| 2026-10-12 | Known-file class is a floor; a token format can raise it                                        | —                | [A-55](#a-55)       |
+| 2026-10-12 | Keep the full matcher on `.git/config`; Prevention reads per-user files only, no `XDG_CONFIG_HOME` | [19](HANDOFF.md#2-decisions-already-made) | [A-20](#a-20), [A-42](#a-42) |
 
 ## Findings from the document review
 
@@ -119,19 +126,19 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-40"></a>A-40 | Placeholder words matched as bare prefixes, so random secrets starting with `xxx`, `True` or `Null` were dropped and fixture tests flaked about one run in five | [verified] | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
 | <a id="a-41"></a>A-41 | The 1Password CLI check stat'ed `/Applications` and `/opt/homebrew` directly, so tests on a Mac with 1Password saw the real machine; paths outside the home now go through `Env.Root` | [verified] | [§5 Env](HANDOFF.md#the-env-abstraction) | built |
 | <a id="a-42"></a>A-42 | pnpm v11 moved global settings to `config.yaml` (camelCase), replaced `only-built-dependencies` with `allowBuilds` (blocked by default), and made `minimumReleaseAge` default to 1440 minutes; npm has `min-release-age`. Prevention follows the documentation, cited in `collect_prevention.go` | [spec] docs | [§2 d19](HANDOFF.md#2-decisions-already-made), [M2](HANDOFF.md#m2-collector-parity) | built |
-| <a id="a-43"></a>A-43 | M3 drops name-only values below 3.0 bits/char entropy or shaped like lowercase words; this misses all-lowercase passphrases and narrowly keeps dev passwords like `devpass123`. A name ending in a describing word (`_ID`, `_URL`, `_EXPIRY`) is not secret-like | [verified] corpus | [M3](HANDOFF.md#m3-matcher-precision) | decide |
-| <a id="a-44"></a>A-44 | M4 says enrichment leaves the total unchanged, but it also says Bitbucket git servers are propagation while the plain Keychain heuristic says service, so enrichment adds 5 per Bitbucket item. Built to the class rule; "unchanged" is tested only where classes agree | [verified] | [M4](HANDOFF.md#m4-helper-inference) | decide |
+| <a id="a-43"></a>A-43 | M3 drops name-only values below 3.0 bits/char entropy or shaped like lowercase words; this misses all-lowercase passphrases and narrowly keeps dev passwords like `devpass123`. A name ending in a describing word (`_ID`, `_URL`, `_EXPIRY`) is not secret-like | [verified] corpus | [M3](HANDOFF.md#m3-matcher-precision) | built |
+| <a id="a-44"></a>A-44 | M4 says enrichment leaves the total unchanged, but it also says Bitbucket git servers are propagation while the plain Keychain heuristic says service, so enrichment adds 5 per Bitbucket item. Built to the class rule; "unchanged" is tested only where classes agree | [verified] | [M4](HANDOFF.md#m4-helper-inference) | built |
 | <a id="a-45"></a>A-45 | gcloud's active account and AWS `sso_session` have no Keychain item to enrich; reporting them needs a new finding or a note on another finding. Left out | [spec] | [M4](HANDOFF.md#m4-helper-inference) | decide |
-| <a id="a-46"></a>A-46 | The environment finding's `Location` lists variable names, so adding a variable changes its `SlotID` and the diff shows new plus resolved instead of rotated | [verified] | [§5 Data model](HANDOFF.md#data-model) | decide |
+| <a id="a-46"></a>A-46 | The environment finding's `Location` lists variable names, so adding a variable changes its `SlotID` and the diff shows new plus resolved instead of rotated | [verified] | [§5 Data model](HANDOFF.md#data-model) | built |
 | <a id="a-47"></a>A-47 | A quoted `IdentityAgent` path with a space (1Password's documented setup) was cut at the space, so the agent finding was dropped | [verified] test | [M2](HANDOFF.md#m2-collector-parity) | built |
 | <a id="a-48"></a>A-48 | Reads followed dotfile symlinks and worktree `gitdir`/`commondir` files into TCC-protected folders in a default run; `readFile` now refuses them, and walks skip dataless directories | [verified] test | [§2 d17](HANDOFF.md#2-decisions-already-made), [§5](HANDOFF.md#collectors-and-the-runner) | built |
 | <a id="a-49"></a>A-49 | The PEM pattern fingerprinted only the constant `BEGIN` line, merging every private key; `NAME=` with an empty value took the next line's value | [verified] test | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
 | <a id="a-50"></a>A-50 | `-sanitize-keychain-sample` passed hex-only descriptions through unchanged | [verified] test | [M2](HANDOFF.md#m2-collector-parity) | built |
 | <a id="a-51"></a>A-51 | The output leak check could not see a secret containing `+` in report-only text, because `html/template` writes `&#43;` | [verified] test | [§5](HANDOFF.md#5-architecture) | built |
-| <a id="a-52"></a>A-52 | An AWS access key ID (`AKIA…`) is a token-pattern hit of its own, so a key pair outside `~/.aws/credentials` scores 16 (two credentials) and never merges with the same pair there (8, fingerprinted by the secret key) | [verified] test | [§2 d7](HANDOFF.md#2-decisions-already-made) | decide |
+| <a id="a-52"></a>A-52 | An AWS access key ID (`AKIA…`) is a token-pattern hit of its own, so a key pair outside `~/.aws/credentials` scores 16 (two credentials) and never merges with the same pair there (8, fingerprinted by the secret key) | [verified] test | [§2 d7](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-53"></a>A-53 | Persisted Keychain `Detail` names the trusted command-line tool paths, and the Docker title the `docker-credential-*` name, both parsed from the dump | [verified] reading | [§2 d16](HANDOFF.md#2-decisions-already-made) | decide |
 | <a id="a-54"></a>A-54 | Keychain `SlotID` is `HMAC(kc|service|account)` as specified, so unnamed items, and `inet` items differing only by protocol, port or path, share a slot | [verified] reading | [§5 Data model](HANDOFF.md#data-model) | decide |
-| <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | decide |
+| <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
 
 ## Findings from the real run (2026-10-12)
 
