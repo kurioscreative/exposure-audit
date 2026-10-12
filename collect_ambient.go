@@ -100,7 +100,6 @@ func envMatches(name string, val []byte) []Match {
 	}
 	for _, sm := range urlCredRx.FindAllSubmatch(val, -1) {
 		if plausibleByName(sm[2]) { // same value checks as extractSecrets (M3)
-
 			m.add(sm[2], classForURL(string(sm[3]), name), name)
 		}
 	}
