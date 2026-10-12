@@ -207,6 +207,7 @@ func (a *App) openReport(stateDir string, report []byte) {
 func defaultCollectors(opts Options, fda string) []Collector {
 	var cs []Collector
 	for _, group := range []func(Options, string) []Collector{
+		newAmbientCollectors,
 		newAICollectors,
 		newReachCollectors,
 	} {
