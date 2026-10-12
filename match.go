@@ -46,9 +46,12 @@ const secretName = `(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_\-]?KEY|ACCESS[_\-]?KEY
 
 var (
 	// secretNameRx is the substring prefilter alone. Use isSecretName for decisions.
-	secretNameRx  = regexp.MustCompile(`(?i)` + secretName)
-	kvRx          = regexp.MustCompile(`(?i)["']?([A-Za-z0-9_.\-]*` + secretName + `[A-Za-z0-9_.\-]*)["']?\s*[:=]\s*["']?([^\s"',;}{]{8,})`)
-	placeholderRx = regexp.MustCompile(`(?i)^(?:\$|<|\{\{|%|your|xxx+|changeme|example|placeholder|todo|none|null|true|false|undefined|password|secret|\*+)`)
+	secretNameRx = regexp.MustCompile(`(?i)` + secretName)
+	kvRx         = regexp.MustCompile(`(?i)["']?([A-Za-z0-9_.\-]*` + secretName + `[A-Za-z0-9_.\-]*)["']?\s*[:=]\s*["']?([^\s"',;}{]{8,})`)
+	// Short placeholder words must be followed by a non-alphanumeric or the
+	// end. As bare prefixes they also rejected random secrets that happen to
+	// start with "xxx", "True" or "Null", which made fixture tests flaky.
+	placeholderRx = regexp.MustCompile(`(?i)^(?:\$|<|\{\{|%|\*+|changeme|example|placeholder|undefined|password|secret|(?:your|xxx+|todo|none|null|true|false)(?:[^A-Za-z0-9]|$))`)
 	// Credentials embedded in URLs (A-20). Group 1: an optional NAME= before
 	// the URL; group 2: the password; group 3: the host.
 	urlCredRx = regexp.MustCompile(`(?:([A-Za-z_][A-Za-z0-9_]*)\s*[=:]\s*["']?)?[a-z][a-z0-9+.\-]*://[^:/\s@"']+:([^@\s"']+)@([^/\s:"'?#]+)`)
