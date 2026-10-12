@@ -136,8 +136,8 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-50"></a>A-50 | `-sanitize-keychain-sample` passed hex-only descriptions through unchanged | [verified] test | [M2](HANDOFF.md#m2-collector-parity) | built |
 | <a id="a-51"></a>A-51 | The output leak check could not see a secret containing `+` in report-only text, because `html/template` writes `&#43;` | [verified] test | [§5](HANDOFF.md#5-architecture) | built |
 | <a id="a-52"></a>A-52 | An AWS access key ID (`AKIA…`) is a token-pattern hit of its own, so a key pair outside `~/.aws/credentials` scores 16 (two credentials) and never merges with the same pair there (8, fingerprinted by the secret key) | [verified] test | [§2 d7](HANDOFF.md#2-decisions-already-made) | built |
-| <a id="a-53"></a>A-53 | Persisted Keychain `Detail` names the trusted command-line tool paths, and the Docker title the `docker-credential-*` name, both parsed from the dump | [verified] reading | [§2 d16](HANDOFF.md#2-decisions-already-made) | decide |
-| <a id="a-54"></a>A-54 | Keychain `SlotID` is `HMAC(kc|service|account)` as specified, so unnamed items, and `inet` items differing only by protocol, port or path, share a slot | [verified] reading | [§5 Data model](HANDOFF.md#data-model) | decide |
+| <a id="a-53"></a>A-53 | Persisted Keychain `Detail` names the trusted command-line tool paths, and the Docker title the `docker-credential-*` name, both parsed from the dump | [verified] reading | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
+| <a id="a-54"></a>A-54 | Keychain `SlotID` is `HMAC(kc|service|account)` as specified, so unnamed items, and `inet` items differing only by protocol, port or path, share a slot | [verified] reading | [§5 Data model](HANDOFF.md#data-model) | built |
 | <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
 
 ## Findings from the real run (2026-10-12)
