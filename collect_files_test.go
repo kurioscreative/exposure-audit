@@ -304,3 +304,18 @@ func TestIdentityAgentQuotedPathWithSpace(t *testing.T) {
 		}
 	}
 }
+
+// A-55: a recognised token raises a known file's class; the file's class is a floor.
+func TestKnownFileTokenRaisesClass(t *testing.T) {
+	fx := newFixture(t)
+	fx.write(".netrc", "machine github.com login me password "+fx.secret("ghp_", 36)+"\nmachine db.internal login me password "+fx.secret("", 24)+"\n")
+	s := fx.fileCollectorsJSON()
+	classes := map[Class]int{}
+	for _, c := range s.Credentials {
+		classes[c.Class]++
+	}
+	if classes[Propagation] != 1 || classes[Service] != 1 {
+		t.Errorf("credential classes %v; want one propagation (ghp_) and one service", classes)
+	}
+	fx.assertNoMarkers()
+}

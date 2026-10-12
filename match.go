@@ -326,6 +326,18 @@ func hasAnyPrefix(v []byte, prefixes ...string) bool {
 	return false
 }
 
+// tokenClass is the highest class of any known token format inside v, or
+// Generic when none matches.
+func tokenClass(v []byte) Class {
+	c := Generic
+	for _, p := range tokenPatterns {
+		if classRank[p.class] > classRank[c] && p.rx.Match(v) {
+			c = p.class
+		}
+	}
+	return c
+}
+
 // highestClass is the class of a finding built from several matches.
 func highestClass(ms []Match) Class {
 	c := Generic

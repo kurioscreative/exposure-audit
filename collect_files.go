@@ -126,7 +126,7 @@ func (s fileSpec) collect(env *Env, rel string) (Finding, bool) {
 		Fix: fixText[s.fix],
 	}
 	if s.rx == nil {
-		if !presentAndReadable(p) {
+		if !presentAndReadable(env, p) {
 			return f, false
 		}
 		f.Confidence = Medium
@@ -142,7 +142,7 @@ func (s fileSpec) collect(env *Env, rel string) (Finding, bool) {
 	var ms matchSet
 	for _, sm := range s.rx.FindAllSubmatch(text, -1) {
 		if v := []byte(strings.TrimSpace(string(sm[1]))); looksReal(v) {
-			ms.add(v, s.class, "")
+			ms.add(v, maxClass(s.class, tokenClass(v)), "") // the file's class is a floor (A-55)
 		}
 	}
 	if len(ms.out) == 0 {
@@ -158,7 +158,10 @@ func (s fileSpec) collect(env *Env, rel string) (Finding, bool) {
 // Opening without reading is the cheapest proof that this process may read
 // it. Unverified on macOS (medium confidence): that open alone never
 // materializes a dataless file; the dataless check makes that moot here.
-func presentAndReadable(p string) bool {
+func presentAndReadable(env *Env, p string) bool {
+	if !env.allowProtected && env.resolvesIntoProtected(p) {
+		return false
+	}
 	fi, err := os.Stat(p)
 	if err != nil || !fi.Mode().IsRegular() || fi.Size() == 0 || isDataless(fi) {
 		return false
