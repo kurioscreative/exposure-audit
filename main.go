@@ -210,6 +210,7 @@ func defaultCollectors(opts Options, fda string) []Collector {
 		newFileCollectors,
 		newAmbientCollectors,
 		newAICollectors,
+		newKeychainCollectors,
 		newReachCollectors,
 	} {
 		cs = append(cs, group(opts, fda)...)
