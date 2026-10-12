@@ -150,17 +150,21 @@ func sanitizeAppPath(p string) string {
 // replaces the rest of each partition value, inside a hex plist or a list.
 func sanitizePartitions(d string) string {
 	if kcHexRx.MatchString(d) {
-		if b, err := hex.DecodeString(d); err == nil {
-			doc := kcPlistRx.ReplaceAllStringFunc(string(b), func(m string) string {
-				inner := kcPlistRx.FindStringSubmatch(m)[1]
-				return "<string>" + sanitizePartition(inner) + "</string>"
-			})
-			enc := hex.EncodeToString([]byte(doc))
-			if strings.ToUpper(d) == d {
-				enc = strings.ToUpper(enc)
-			}
-			return enc
+		// Only a hex-encoded plist is a partition list. Any other hex text is
+		// an ordinary description and must not pass through.
+		b, err := hex.DecodeString(d)
+		if err != nil || !strings.Contains(string(b), "<plist") {
+			return placeholder(d)
 		}
+		doc := kcPlistRx.ReplaceAllStringFunc(string(b), func(m string) string {
+			inner := kcPlistRx.FindStringSubmatch(m)[1]
+			return "<string>" + sanitizePartition(inner) + "</string>"
+		})
+		enc := hex.EncodeToString([]byte(doc))
+		if strings.ToUpper(d) == d {
+			enc = strings.ToUpper(enc)
+		}
+		return enc
 	}
 	parts := strings.Split(d, ",")
 	for i, p := range parts {

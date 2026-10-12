@@ -349,3 +349,12 @@ func TestSanitizeKeychainSample(t *testing.T) {
 }
 
 func hexUpper(s string) string { return strings.ToUpper(hexEncode(s)) }
+
+// A description made only of hex digits is not a partition list.
+func TestSanitizeHexDescription(t *testing.T) {
+	for _, d := range []string{"deadbeefcafe", "DEADBEEF00"} {
+		if got := sanitizePartitions(d); got == d || len(got) != len(d) {
+			t.Errorf("sanitizePartitions(%q) = %q; want a same-length placeholder", d, got)
+		}
+	}
+}
