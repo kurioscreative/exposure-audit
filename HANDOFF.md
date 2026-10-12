@@ -2,7 +2,7 @@
 
 You are building a Go implementation in this repository. The Python prototype is at `prototype/exposure_audit.py` (v0.1.0, 990 lines, sha256 prefix `b2a9b3a3434feec9`). Treat it as a behavioral reference and a source of data tables, not as code to extend. It has known design defects (section 7) that the Go version fixes by design instead of porting.
 
-`REVIEW.md` records the adversarial review of this document (2026-10-12): every finding has an ID (`A-nn`, `R-nn`), a status, and a pointer back here. IDs are cited in this document where a rule came from a finding. Keep `REVIEW.md` current as you build (section 10).
+[`REVIEW.md`](REVIEW.md) records the adversarial review of this document (2026-10-12): every finding has an ID (`A-nn`, `R-nn`), a status, and a pointer back here. IDs are cited in this document where a rule came from a finding. Keep `REVIEW.md` current as you build (section 10).
 
 ## 1. What we are building and why
 
@@ -45,21 +45,21 @@ One accepted cost of decision 5: no native Keychain API access. Keychain analysi
 
 Decided 2026-10-12, after the review and a prototype run on Glenn's Mac:
 
-6. **Observe macOS before building.** Done (A-01). Remaining macOS unknowns are in M5.
-7. **Score each credential once** (A-14). A credential is a unique fingerprint. Its score is the highest it earns in any location; every location is listed. The prototype's multiplier for several secrets in one file is dropped: each secret already scores as its own credential.
-8. **"Fix first" is ordered by class tier, then score** (R-01). A worm-vector token can never rank below a `.env` of cloud keys. Section 5 defines the tiers.
-9. **Committed dotenv files score × 0.5** (R-02).
-10. **Approvals cached for a time window score × 0.5, as gate `windowed`** (A-19): the 1Password CLI app integration and the 1Password SSH agent. `sudo` is never run; a cached sudo ticket is listed as a known blind spot.
-11. **New class `agent`, weight 5** (R-05), for coding-agent session tokens such as `CLAUDE_CODE_MESSAGING_TOKEN`, until their reach is known.
-12. **Full Disk Access is pinned to the top of "Fix first", unscored** (R-06).
-13. **An AWS SSO cache holding a `refreshToken` is static, not session** (A-16).
-14. **Credential helpers are never executed** (A-23). Whether a helper hands out its token silently is inferred from configuration plus the Keychain access list (M4).
-15. **The HTML report is written only with `-open`, and deleted afterwards** (A-25).
-16. **History never stores Keychain service or account names** (A-27).
-17. **The protected-folder probe is opt-in** (`-probe-folders`) (A-28).
-18. **Exit codes:** 0 = complete run; 1 = report produced but at least one collector failed, timed out, or was partial; 2 = usage error or unusable state directory (A-31).
-19. **An unscored "Prevention" section** reports whether package managers run install scripts and whether release-age delays are set (A-32).
-20. **The content sweep (M6) is post-MVP** (A-24).
+6. **Observe macOS before building.** Done ([A-01](REVIEW.md#a-01)). Remaining macOS unknowns are in M5.
+7. **Score each credential once** ([A-14](REVIEW.md#a-14)). A credential is a unique fingerprint. Its score is the highest it earns in any location; every location is listed. The prototype's multiplier for several secrets in one file is dropped: each secret already scores as its own credential ([A-03](REVIEW.md#a-03)).
+8. **"Fix first" is ordered by class tier, then score** ([R-01](REVIEW.md#r-01)). A worm-vector token can never rank below a `.env` of cloud keys. Section 5 defines the tiers.
+9. **Committed dotenv files score × 0.5** ([R-02](REVIEW.md#r-02)).
+10. **Approvals cached for a time window score × 0.5, as gate `windowed`** ([A-19](REVIEW.md#a-19)): the 1Password CLI app integration and the 1Password SSH agent. `sudo` is never run; a cached sudo ticket is listed as a known blind spot.
+11. **New class `agent`, weight 5** ([R-05](REVIEW.md#r-05)), for coding-agent session tokens such as `CLAUDE_CODE_MESSAGING_TOKEN`, until their reach is known.
+12. **Full Disk Access is pinned to the top of "Fix first", unscored** ([R-06](REVIEW.md#r-06)).
+13. **An AWS SSO cache holding a `refreshToken` is static, not session** ([A-16](REVIEW.md#a-16)).
+14. **Credential helpers are never executed** ([A-23](REVIEW.md#a-23)). Whether a helper hands out its token silently is inferred from configuration plus the Keychain access list (M4). None of the permitted programs prints a secret ([A-09](REVIEW.md#a-09)).
+15. **The HTML report is written only with `-open`, and deleted afterwards** ([A-25](REVIEW.md#a-25)).
+16. **History never stores Keychain service or account names** ([A-27](REVIEW.md#a-27)).
+17. **The protected-folder probe is opt-in** (`-probe-folders`) ([A-28](REVIEW.md#a-28)).
+18. **Exit codes:** 0 = complete run; 1 = report produced but at least one collector failed, timed out, or was partial; 2 = usage error or unusable state directory ([A-31](REVIEW.md#a-31)).
+19. **An unscored "Prevention" section** reports whether package managers run install scripts and whether release-age delays are set ([A-32](REVIEW.md#a-32)).
+20. **The content sweep (M6) is post-MVP** ([A-24](REVIEW.md#a-24)).
 21. **A passphrase-protected SSH key that no agent holds keeps the 0.1 gated multiplier.**
 22. **Build from source on Glenn's Mac.** Go 1.26 is installed through mise.
 
@@ -145,7 +145,7 @@ type Collector interface {
 }
 ```
 
-`Run` returns plain bytes because none of the four permitted programs prints a secret value: the Keychain dump is metadata (invariant 7), `ssh-add -l` prints public fingerprints, `ps` prints process names. If a later change ever runs a program whose output is a secret, `Run` must return a `Secret` for it (A-09).
+`Run` returns plain bytes because none of the four permitted programs prints a secret value: the Keychain dump is metadata (invariant 7), `ssh-add -l` prints public fingerprints, `ps` prints process names. If a later change ever runs a program whose output is a secret, `Run` must return a `Secret` for it ([A-09](REVIEW.md#a-09)).
 
 A few variables are needed as plain strings and are not secrets. `Env.Plain(name)` returns them, and only them:
 
@@ -154,20 +154,20 @@ A few variables are needed as plain strings and are not secrets. `Env.Plain(name
 var PlainEnv = []string{"__CFBundleIdentifier", "TERM_PROGRAM", "SSH_AUTH_SOCK", "TMUX", "USER"}
 ```
 
-The context key needs the first two; the SSH collector needs `SSH_AUTH_SOCK` to pass to `ssh-add` and to recognise a 1Password socket (A-33).
+The context key needs the first two; the SSH collector needs `SSH_AUTH_SOCK` to pass to `ssh-add` and to recognise a 1Password socket ([A-33](REVIEW.md#a-33)).
 
 This is what makes every collector testable on Linux: tests pass a temp home, a fake environment, and a stub `Run` that returns canned output (for example a sample Keychain dump). It also gives one place to enforce invariant 8.
 
 ### Collectors and the runner
 
-Collectors run concurrently under one global deadline of 60 seconds, with per-collector budgets derived from it (A-12). Each is wrapped so that an error or panic becomes an entry in `Snapshot.Errors` holding only the collector name and a fixed category string. Never store `err.Error()`: some standard library errors quote their input (`strconv` does), which could be a secret.
+Collectors run concurrently under one global deadline of 60 seconds, with per-collector budgets derived from it ([A-12](REVIEW.md#a-12)). Each is wrapped so that an error or panic becomes an entry in `Snapshot.Errors` holding only the collector name and a fixed category string. Never store `err.Error()`: some standard library errors quote their input (`strconv` does), which could be a secret.
 
-- `recover` only catches panics in its own goroutine. Collectors must not start goroutines with a bare `go`; they use a runner-provided helper that recovers and reports (A-11).
+- `recover` only catches panics in its own goroutine. Collectors must not start goroutines with a bare `go`; they use a runner-provided helper that recovers and reports ([A-11](REVIEW.md#a-11)).
 - A collector that ignores `ctx` (a hung mount, a file-provider directory) cannot be stopped. At the deadline the runner stops waiting, records a timeout, and renders without it.
-- Each collector reports a status: `complete`, `partial` (budget hit), `failed`, `timeout`, or `skipped` (not applicable, such as the Keychain on Linux, or turned off, such as `-skip-keychain`). The diff treats every status except `complete` as not complete, so skipping the Keychain does not look like a 231-point improvement. The exit code treats `skipped` as normal (A-13, A-37).
-- Never read a file that iCloud or a file provider has evicted: check `SF_DATALESS` (`0x40000000` in `syscall.Stat_t.Flags`) first. Reading one downloads it, which is network traffic caused by the tool (A-29). Size measurement uses `stat` only.
+- Each collector reports a status: `complete`, `partial` (budget hit), `failed`, `timeout`, or `skipped` (not applicable, such as the Keychain on Linux, or turned off, such as `-skip-keychain`). The diff treats every status except `complete` as not complete, so skipping the Keychain does not look like a 231-point improvement. The exit code treats `skipped` as normal ([A-13](REVIEW.md#a-13), [A-37](REVIEW.md#a-37)).
+- Never read a file that iCloud or a file provider has evicted: check `SF_DATALESS` (`0x40000000` in `syscall.Stat_t.Flags`) first. Reading one downloads it, which is network traffic caused by the tool ([A-29](REVIEW.md#a-29)). Size measurement uses `stat` only.
 - Walks are in sorted order, so a budget cut drops the same files each time.
-- Walks never enter TCC-protected folders unless `-probe-folders` is set or Full Disk Access is inferred `yes`: `Desktop`, `Documents`, `Downloads`, `Library/Mobile Documents`, `Library/CloudStorage`, and `Pictures`. Listing one can raise the permission prompt that decision 17 makes opt-in. The prototype had this rule (`skip_protected`) (A-35).
+- Walks never enter TCC-protected folders unless `-probe-folders` is set or Full Disk Access is inferred `yes`: `Desktop`, `Documents`, `Downloads`, `Library/Mobile Documents`, `Library/CloudStorage`, and `Pictures`. Listing one can raise the permission prompt that decision 17 makes opt-in. The prototype had this rule (`skip_protected`) ([A-35](REVIEW.md#a-35)).
 - Full Disk Access inference (M2) runs synchronously before the concurrent collectors start, because the sweep depends on it. It is three directory reads and cannot prompt.
 
 ### The Secret type
@@ -188,7 +188,7 @@ func (s Secret) Fingerprint(salt []byte) string
 
 The matcher and collectors pass `Secret` values, never `string`. The only way out of a `Secret` is `Fingerprint`. No model type has a field that can hold one.
 
-Leaks are more likely through fields built from parsed text than through values (A-26). Example: a `~/.gitconfig` `url "https://x-access-token:<token>@github.com/".insteadOf` line turned into a host name puts the token in `Location`. Build `Location` from known paths and fixed labels, never from parsed content. Before anything is written (stdout, `-json`, report, history), split the output on characters outside `[A-Za-z0-9_\-.+/=:]`, HMAC each candidate of 8 or more characters with the salt, and abort the write if one matches a collected fingerprint. This catches real-world leaks without keeping values in memory.
+Leaks are more likely through fields built from parsed text than through values ([A-26](REVIEW.md#a-26)). Example: a `~/.gitconfig` `url "https://x-access-token:<token>@github.com/".insteadOf` line turned into a host name puts the token in `Location`. Build `Location` from known paths and fixed labels, never from parsed content. Before anything is written (stdout, `-json`, report, history), split the output on characters outside `[A-Za-z0-9_\-.+/=:]`, HMAC each candidate of 8 or more characters with the salt, and abort the write if one matches a collected fingerprint. This catches real-world leaks without keeping values in memory.
 
 ### Data model
 
@@ -214,8 +214,8 @@ Item        one entry in "Fix first" (derived in score.go)
 - `Lifetime`: `static` or `session`.
 - `Committed`: the file is tracked by git (dotenv files only).
 - `Fingerprint`: `hex(HMAC-SHA256(salt, value))[:12]`. Salt is 32 random bytes in `~/.exposure-audit/salt`.
-- SSH keys are fingerprinted by public key, not file text: the `SHA256:` value `ssh-add -l` prints, which is `base64(sha256(public key blob))` without padding. The public half of an `openssh-key-v1` file is cleartext even when the private half is encrypted. This makes a key file and the same key in an agent one credential, and adding a passphrase is not a rotation (A-15). If the public key cannot be extracted (an encrypted PEM key, an unknown format) and no `.pub` file sits next to it, fingerprint the file text instead at medium confidence (A-38).
-- Keychain items cannot be fingerprinted by value (invariant 7). Their hit fingerprint is `HMAC(kc|service|account|mdat)`, and their `SlotID` is `sha256(kind | HMAC(kc|service|account))[:12]`. A changed `mdat` changes `ID` but not `SlotID`, so the ordinary rotation rule detects it. The persisted `Location` is built from that `SlotID` (section 5, State on disk), never the reverse (A-34).
+- SSH keys are fingerprinted by public key, not file text: the `SHA256:` value `ssh-add -l` prints, which is `base64(sha256(public key blob))` without padding. The public half of an `openssh-key-v1` file is cleartext even when the private half is encrypted. This makes a key file and the same key in an agent one credential, and adding a passphrase is not a rotation ([A-15](REVIEW.md#a-15)). If the public key cannot be extracted (an encrypted PEM key, an unknown format) and no `.pub` file sits next to it, fingerprint the file text instead at medium confidence ([A-38](REVIEW.md#a-38)).
+- Keychain items cannot be fingerprinted by value (invariant 7). Their hit fingerprint is `HMAC(kc|service|account|mdat)`, and their `SlotID` is `sha256(kind | HMAC(kc|service|account))[:12]`. A changed `mdat` changes `ID` but not `SlotID`, so the ordinary rotation rule detects it. The persisted `Location` is built from that `SlotID` (section 5, State on disk), never the reverse ([A-34](REVIEW.md#a-34)).
 - Presence-only findings (a credential store that is not parsed) fingerprint `kind|relative path`.
 - `SlotID`: `sha256(kind | location)[:12]`, except Keychain items (above). Identifies where credentials live.
 - `ID`: `sha256(kind | location | sorted fingerprints)[:12]`. Identifies the specific credentials in that place.
@@ -239,7 +239,7 @@ credential class = highest class over those hits (propagation > cloud > agent > 
 total            = sum of credential scores
 ```
 
-Scores are `float64`. Round only for display and JSON, with `math.RoundToEven(x*10)/10`. `math.Round` rounds half away from zero, which differs from the prototype's Python `round` on values like 6.25 (A-03).
+Scores are `float64`. Round only for display and JSON, with `math.RoundToEven(x*10)/10`. `math.Round` rounds half away from zero, which differs from the prototype's Python `round` on values like 6.25 ([A-03](REVIEW.md#a-03)).
 
 **Fix first.** Build items by grouping credentials that occur in exactly the same set of findings, compared by `SlotID`, so five secrets in one `.env` (and its four worktree copies) are one item. Grouping by `SlotID` rather than path keeps different kinds in one file apart: the AWS static and session credentials in `.aws/credentials` stay two items, with different fixes. Item score is the sum of its credential scores. Sort items by tier, then score descending, then location:
 
@@ -279,13 +279,13 @@ Decisions 7–9 are the response. The ranking fixture in section 11 encodes it.
 
 **Context key.** Each snapshot records the launching application and whether the shell runs under a coding agent. Diffs compare only against the most recent snapshot with the same key.
 
-- **Application:** `__CFBundleIdentifier` from the environment, falling back to `TERM_PROGRAM`, then `unknown` (A-05). The `ps` parent chain is for display only. Observed on Glenn's Mac: inside tmux, `TERM_PROGRAM` is `tmux` and the chain ends at `tmux`, but `__CFBundleIdentifier` still held the terminal's bundle id.
+- **Application:** `__CFBundleIdentifier` from the environment, falling back to `TERM_PROGRAM`, then `unknown` ([A-05](REVIEW.md#a-05)). The `ps` parent chain is for display only. Observed on Glenn's Mac: inside tmux, `TERM_PROGRAM` is `tmux` and the chain ends at `tmux`, but `__CFBundleIdentifier` still held the terminal's bundle id.
 - **Agent:** whether the parent chain (process names from `/bin/ps -o ppid=,comm= -p <pid>`, up to 8 levels) contains `claude`, `codex`, `cursor-agent`, `gemini`, `aider` or `goose`. Agent shells differ: the same terminal and tmux session gained `CLAUDE_CODE_MESSAGING_TOKEN` under Claude Code.
-- **Not Full Disk Access** (A-06). Revoking it is a recommended fix; putting it in the key would reset history at that moment. A change in Full Disk Access is reported as a diff event.
+- **Not Full Disk Access** ([A-06](REVIEW.md#a-06)). Revoking it is a recommended fix; putting it in the key would reset history at that moment. A change in Full Disk Access is reported as a diff event.
 
-Snapshot files are created with `O_EXCL`; on collision, append `-2`, `-3`, … (A-30).
+Snapshot files are created with `O_EXCL`; on collision, append `-2`, `-3`, … ([A-30](REVIEW.md#a-30)).
 
-**Diff** states per finding: `new`, `resolved`, `rotated` (same `SlotID`, different `ID`, or a changed Keychain `mdat`), and `unknown`. A finding whose collector was not `complete` in either run is `unknown`, never `resolved`, and the credentials only it holds are left out of both totals when computing the delta (A-13).
+**Diff** states per finding: `new`, `resolved`, `rotated` (same `SlotID`, different `ID`, or a changed Keychain `mdat`), and `unknown`. A finding whose collector was not `complete` in either run is `unknown`, never `resolved`, and the credentials only it holds are left out of both totals when computing the delta ([A-13](REVIEW.md#a-13)).
 
 ### Command line
 
@@ -306,7 +306,7 @@ These tests are part of M0 and must exist before any collector is written.
 | Invariant              | Mechanical check                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | No secret values       | Leak test: every fixture secret carries a unique marker; run the full tool; assert no marker in stdout, stderr, `-json` output, the `-open` report (written to the fixture home with a stub `open`), or any history file. Unit test: `fmt.Sprintf` with `%v`, `%+v`, `%#v`, `%s` and `json.Marshal` never yield the value for a bare `Secret`, a `Secret` in an unexported struct field, and a `Secret` in a slice and a map. The bare case alone passes even with the leaky `[]byte` layout. Output check: a `Location` built from a fixture value aborts the write |
-| No network             | `go list -deps .` must not contain `net` or `net/http`, matched exactly. `html/template` legitimately pulls in `net/url` and `net/netip` (verified), so a prefix match on `net` would wrongly fail the build (A-04)                                                                                                                                                                                                                                                                                                                                                  |
+| No network             | `go list -deps .` must not contain `net` or `net/http`, matched exactly. `html/template` legitimately pulls in `net/url` and `net/netip` (verified), so a prefix match on `net` would wrongly fail the build ([A-04](REVIEW.md#a-04))                                                                                                                                                                                                                                                                                                                                                  |
 | Standard library only  | Test parses `go.mod` and fails on any `require`; fails if `go.sum` exists; build with `CGO_ENABLED=0`                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Read-only, permissions | Test snapshots the fixture home's file list and modes before and after a run, with and without `-open`; only `.exposure-audit` may differ, with 0700 and 0600, and no `report.html` remains                                                                                                                                                                                                                                                                                                                                                                          |
 | Collector containment  | Test registers a collector that panics, one that errors, one that panics inside a goroutine started through the runner helper, and one that blocks past the deadline; the report renders on time; `Errors` holds four entries with no dynamic text; exit code is 1                                                                                                                                                                                                                                                                                                   |
@@ -320,14 +320,14 @@ Also run `go vet` and `gofmt -l` in the test script. The whole suite should fini
 ### Take
 
 - **Data tables.** `SPECS` (about 30 credential files with capture patterns), `TOKEN_RX`, `REACH_TARGETS`, `AI_FILES`, `FIX` texts, `SKIP_DIRS`. Transcribe them. The patterns use no lookarounds or backreferences, so they are valid in Go's RE2 syntax; confirm each compiles. Add these while transcribing:
-  - History (A-07): `~/.zsh_sessions/*.history` (Apple Terminal's per-session files; the directory exists on Glenn's Mac), `~/.bash_sessions/*`, `~/.viminfo`.
-  - `SPECS`, propagation class (A-21): `~/.yarnrc.yml` (`npmAuthToken`; also project-level copies in the sweep), `~/.bundle/config` (`BUNDLE_<HOST>: user:token`), `~/.config/git/credentials` (git's XDG credential store, same pattern as `.git-credentials`), `~/.config/glab-cli/config.yml` (`token:`).
+  - History ([A-07](REVIEW.md#a-07)): `~/.zsh_sessions/*.history` (Apple Terminal's per-session files; the directory exists on Glenn's Mac), `~/.bash_sessions/*`, `~/.viminfo`.
+  - `SPECS`, propagation class ([A-21](REVIEW.md#a-21)): `~/.yarnrc.yml` (`npmAuthToken`; also project-level copies in the sweep), `~/.bundle/config` (`BUNDLE_<HOST>: user:token`), `~/.config/git/credentials` (git's XDG credential store, same pattern as `.git-credentials`), `~/.config/glab-cli/config.yml` (`token:`).
   - Sweep filenames, service class: `config/master.key`, `config/credentials/*.key` (Rails). Whole-file value, presence-style fingerprint of the content.
-  - Credentials embedded in URLs (A-20): one pattern, `[a-z][a-z0-9+.-]*://[^:/\s@]+:(<secret>[^@\s]+)@`, applied to environment values (including `*_URL`, which `ENV_SKIP` currently drops), shell files, dotenv files, and `.git/config` of every repository the sweep passes (the sweep skips `.git` otherwise). Class by host: GitHub, GitLab, npm or PyPI hosts are propagation; otherwise by variable name; otherwise generic.
-  - SSH agents named by `IdentityAgent` in `~/.ssh/config`, not only `$SSH_AUTH_SOCK` (A-22).
-  - Class-name rules need token boundaries (A-17): `PROP_NAME_RX` matches `GH_` inside `HIGH_WATER_TOKEN`. Match names split on `_`, `-` and `.`.
+  - Credentials embedded in URLs ([A-20](REVIEW.md#a-20)): one pattern, `[a-z][a-z0-9+.-]*://[^:/\s@]+:(<secret>[^@\s]+)@`, applied to environment values (including `*_URL`, which `ENV_SKIP` currently drops), shell files, dotenv files, and `.git/config` of every repository the sweep passes (the sweep skips `.git` otherwise). Class by host: GitHub, GitLab, npm or PyPI hosts are propagation; otherwise by variable name; otherwise generic.
+  - SSH agents named by `IdentityAgent` in `~/.ssh/config`, not only `$SSH_AUTH_SOCK` ([A-22](REVIEW.md#a-22)).
+  - Class-name rules need token boundaries ([A-17](REVIEW.md#a-17)): `PROP_NAME_RX` matches `GH_` inside `HIGH_WATER_TOKEN`. Match names split on `_`, `-` and `.`.
   - Agent tokens (decision 11): a secret-like name whose first segment is `CLAUDE_CODE`, `CLAUDECODE`, `CODEX`, `CURSOR`, `GEMINI_CLI`, `AIDER`, `GOOSE` or `WINDSURF` is class `agent`. Fix text: "Coding-agent sessions pass this token to every command they run, including package installs. Find out what it authorizes, and run installs from a plain terminal or a sandbox."
-  - `REACH_TARGETS` labels browser and app folders under `Application Support` as "open". macOS 27 reportedly blocks some of them without a prompt (section 13). Keep measuring; drop the label column.
+  - `REACH_TARGETS` labels browser and app folders under `Application Support` as "open". macOS 27 reportedly blocks some of them without a prompt (section 13, [R-04](REVIEW.md#r-04)). Keep measuring; drop the label column.
 - **Collector logic** for AWS static versus session splitting and the OpenSSH key header parse that distinguishes encrypted from plaintext keys. Change SSO caches (decision 13): a cache file with a `refreshToken` is a static cloud credential at medium confidence, reported whether or not its access token has expired, because the refresh token mints new ones. Fingerprint the refresh token. Caches without one keep the prototype's expiry logic.
 - **Keychain dump parser and classifier** as a starting point (see M2 and M5).
 - **Report design.** Carry the CSS and section order over, and add Prevention after Data reach. It renders cleanly at 1100px and 390px in light and dark.
@@ -347,7 +347,7 @@ Also run `go vet` and `gofmt -l` in the test script. The whole suite should fini
 | Folder probe on by default                                                  | `-probe-folders` (decision 17)                                                                                                        |
 | Report always written and kept                                              | Only with `-open`, then deleted (decision 15)                                                                                         |
 | Agent approval guessed from the socket path                                 | 1Password socket → `windowed`; other names keep the heuristic at `confidence: medium` with the reason in `Detail`                     |
-| Encrypted SSH key always scored as gated                                    | Same key in an agent takes the agent's gate (A-15). Otherwise, if `~/.ssh/config` sets `UseKeychain yes`, silent at medium confidence |
+| Encrypted SSH key always scored as gated                                    | Same key in an agent takes the agent's gate ([A-15](REVIEW.md#a-15)). Otherwise, if `~/.ssh/config` sets `UseKeychain yes`, silent at medium confidence |
 | Unused `seen` variable, `FIX["gpg"]` with no collector                      | Drop                                                                                                                                  |
 
 ### What the prototype proved, and did not
@@ -356,7 +356,7 @@ Verified on Linux against a fixture home: detection of the original section 11 f
 
 Observed on macOS (Glenn's Mac, macOS 27, 2026-10-12; Glenn ran the prototype, agents saw only the terminal summary):
 
-- `security dump-keychain -a` raised no prompt. 147 items. Most entries include partition lists and `mdat`.
+- `security dump-keychain -a` raised no prompt. 147 items. Most entries include partition lists and `mdat` ([R-07](REVIEW.md#r-07), [R-08](REVIEW.md#r-08)).
 - The Keychain added about 43 findings and 231 points, 3 of them worm vectors. Partition lists were not modelled, so 43 is an upper bound.
 - `~/Library/Application Support/com.apple.TCC/` does not exist (`ENOENT`) from any terminal, so the prototype's Full Disk Access check printed `n/a`. Reports say the user TCC database moved to a protected location (section 13).
 - The `ps` chain ends at `tmux` (section 5, Context key).
@@ -388,9 +388,9 @@ Each collector ships with fixture tests through `Env`.
 - Ambient: environment (agent class, URL credentials), shell startup files, history, dotenv sweep with sorted walk and time budget, committed detection via `gitindex.go`, `.git/config` remotes.
 - AI tooling configs.
 - 1Password CLI (decision 10): if `/Applications/1Password.app` exists and an `op` binary exists at `/opt/homebrew/bin/op` or `/usr/local/bin/op` (stat only, never executed), emit one finding: kind `op-cli`, class propagation (a vault usually holds publishing tokens), gate `windowed`, confidence low, fingerprint `op-cli`. Detail: "If the 1Password app's CLI integration is on, a script in a terminal that unlocked `op` in the last ~10 minutes can read the vault without a prompt." Unverified on macOS.
-- Context and reach: context key (section 5), `ps` chain for display, reach table with sizes under a per-target budget. Targets that need Full Disk Access (Mail, Messages, Safari) fail silently and never prompt, so they are always checked. TCC-protected folders (Desktop, Documents, Downloads, iCloud Drive, cloud storage, Photos, Contacts, Calendars, Notes) are checked only with `-probe-folders` or when Full Disk Access is `yes` (A-36). Full Disk Access is inferred: `yes` if any of Mail, Messages or Safari data is readable, `no` if all that exist are denied, `unknown` otherwise. When `yes`, emit the pinned tier-0 item: "Full Disk Access granted to <app>", fix "Remove it in System Settings → Privacy & Security → Full Disk Access unless something you run from this terminal needs it."
+- Context and reach: context key (section 5), `ps` chain for display, reach table with sizes under a per-target budget. Targets that need Full Disk Access (Mail, Messages, Safari) fail silently and never prompt, so they are always checked. TCC-protected folders (Desktop, Documents, Downloads, iCloud Drive, cloud storage, Photos, Contacts, Calendars, Notes) are checked only with `-probe-folders` or when Full Disk Access is `yes` ([A-36](REVIEW.md#a-36)). Full Disk Access is inferred ([R-03](REVIEW.md#r-03)): `yes` if any of Mail, Messages or Safari data is readable, `no` if all that exist are denied, `unknown` otherwise. When `yes`, emit the pinned tier-0 item: "Full Disk Access granted to <app>", fix "Remove it in System Settings → Privacy & Security → Full Disk Access unless something you run from this terminal needs it."
 - Prevention (decision 19), unscored, config files only: npm `ignore-scripts` in `~/.npmrc`; Yarn Berry `enableScripts` and `npmMinimalAgeGate` in `~/.yarnrc.yml`; pnpm `minimum-release-age` and `only-built-dependencies` in pnpm's global rc (`~/Library/Preferences/pnpm/rc`); Bun `~/.bunfig.toml` `[install]` settings. Report each as on, off, or not configured, with a fix line. Key names and paths are from memory at medium confidence; confirm each against the tool's documentation and cite it in a comment.
-- Keychain: parser and classifier. First build `-sanitize-keychain-sample`: it runs `security dump-keychain -a`, keeps structure and the fixed vocabulary (`class`, attribute tags, `authorizations`, `applications`, partition markers, `mdat` format), and replaces every attribute value, description, application path outside `/usr/bin`, `/bin`, `/usr/libexec`, `/System` and `/Library/Developer`, and partition value other than the `apple:`, `apple-tool:` and `teamid:` prefixes with a same-length placeholder. **Glenn** runs it, reads the output, and commits it to `testdata/`. Then write the classifier against that sample, including partition lists: a command-line tool counts as a silent reader only if its partition (`apple-tool:` for Apple-signed tools such as `/usr/bin/security`) is in the item's partition list. Record the observed partition format in a code comment.
+- Keychain: parser and classifier. First build `-sanitize-keychain-sample`: it runs `security dump-keychain -a`, keeps structure and the fixed vocabulary (`class`, attribute tags, `authorizations`, `applications`, partition markers, `mdat` format), and replaces every attribute value, description, application path outside `/usr/bin`, `/bin`, `/usr/libexec`, `/System` and `/Library/Developer`, and partition value other than the `apple:`, `apple-tool:` and `teamid:` prefixes with a same-length placeholder. **Glenn** runs it, reads the output, and commits it to `testdata/`. Then write the classifier against that sample, including partition lists: a command-line tool counts as a silent reader only if its partition (`apple-tool:` for Apple-signed tools such as `/usr/bin/security`) is in the item's partition list. Record the observed partition format in a code comment ([R-07](REVIEW.md#r-07)).
 - Report via `html/template` with embedded CSS, written only for `-open` (section 5).
 
 Acceptance: the section 11 tables reproduced exactly, and the leak test extended to every fixture.
@@ -398,7 +398,7 @@ Acceptance: the section 11 tables reproduced exactly, and the leak test extended
 ### M3. Matcher precision
 
 - Secret-like names match on token boundaries (`AUTH_TOKEN`, `_auth`), not substrings (`author`).
-- A Shannon entropy floor for values matched by name only. Known-prefix tokens are exempt. Fixture values matched by name (the `.env` `DB_PASSWORD`, `MY_SERVICE_TOKEN`) are generated high-entropy so they pass.
+- A Shannon entropy floor for values matched by name only. Known-prefix tokens are exempt. Fixture values matched by name (the `.env` `DB_PASSWORD`, `MY_SERVICE_TOKEN`) are generated high-entropy so they pass ([A-18](REVIEW.md#a-18)).
 - A test corpus of at least 20 true positives and 20 known false positives, with both rates printed by the test.
 
 ### M4. Helper inference
@@ -486,7 +486,7 @@ Each is a separate fake home, so totals do not mix.
 
 | Case                    | Setup                                                                                                                                                             | Expected                                                                |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Ranking (R-01)          | `.npmrc` token; `code/app/.env` with four `AWS_*`-named secrets                                                                                                   | npm item first (tier 1, 10.0) above the `.env` item (tier 2, 32.0)      |
+| Ranking ([R-01](REVIEW.md#r-01))          | `.npmrc` token; `code/app/.env` with four `AWS_*`-named secrets                                                                                                   | npm item first (tier 1, 10.0) above the `.env` item (tier 2, 32.0)      |
 | Committed and worktrees | `code/app/.env.development` with an `sk_live_` value, tracked in a fake `.git/index`; `code/app-wt/` is a worktree (`.git` file) with the same file, also tracked | one credential, service 2.5, one item listing both locations            |
 | SSH key in agent        | `id_enc` plus `SSH_AUTH_SOCK` set and a stub `ssh-add -l` printing `id_enc`'s `SHA256:` fingerprint                                                               | one credential, propagation silent 10.0, listing the file and the agent |
 | 1Password agent         | `SSH_AUTH_SOCK` path containing `1password`; stub `ssh-add -l` lists one key                                                                                      | propagation windowed 5.0                                                |
