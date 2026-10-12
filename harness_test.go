@@ -19,6 +19,7 @@ import (
 type fixture struct {
 	t       *testing.T
 	home    string
+	root    string // stands in for "/" (Env.Root)
 	environ map[string]Secret
 	now     time.Time
 	goos    string
@@ -32,6 +33,7 @@ func newFixture(t *testing.T) *fixture {
 	return &fixture{
 		t:       t,
 		home:    t.TempDir(),
+		root:    t.TempDir(),
 		environ: map[string]Secret{},
 		now:     time.Date(2026, 10, 12, 9, 30, 0, 0, time.UTC),
 		goos:    "linux",
@@ -65,6 +67,7 @@ func (f *fixture) secret(prefix string, n int) string {
 func (f *fixture) env() *Env {
 	return &Env{
 		Home:    f.home,
+		Root:    f.root,
 		Environ: f.environ,
 		GOOS:    f.goos,
 		Now:     f.now,

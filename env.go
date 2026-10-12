@@ -17,6 +17,7 @@ import (
 // can hand them a temp home, a fake environment and a stub Run.
 type Env struct {
 	Home    string
+	Root    string            // filesystem root for the few paths outside the home; "/" except in tests
 	Environ map[string]Secret // values are secrets too; a map[string]string leaks under t.Logf("%+v", env) (A-10)
 	GOOS    string
 	Now     time.Time
@@ -102,6 +103,7 @@ func RealEnv() (*Env, error) {
 	}
 	return &Env{
 		Home:    home,
+		Root:    "/",
 		Environ: environ,
 		GOOS:    runtime.GOOS,
 		Now:     time.Now(),

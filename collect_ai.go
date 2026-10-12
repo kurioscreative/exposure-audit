@@ -62,17 +62,14 @@ const opCLIFix = "If you do not use the 1Password CLI from terminals, turn off i
 // executed: both checks are stat calls. Unverified on macOS (low confidence):
 // whether the CLI integration is actually on, and how long the approval
 // window lasts, cannot be seen without running op.
-type opCLICollector struct {
-	appPath string   // the 1Password app bundle
-	opPaths []string // where Homebrew installs op
-}
+type opCLICollector struct{}
 
-func newOpCLICollector() *opCLICollector {
-	return &opCLICollector{
-		appPath: "/Applications/1Password.app",
-		opPaths: []string{"/opt/homebrew/bin/op", "/usr/local/bin/op"},
-	}
-}
+func newOpCLICollector() *opCLICollector { return &opCLICollector{} }
+
+// Paths under Env.Root: the 1Password app bundle, and where Homebrew installs op.
+const opAppPath = "Applications/1Password.app"
+
+var opPaths = []string{"opt/homebrew/bin/op", "usr/local/bin/op"}
 
 func (*opCLICollector) Name() string { return "1password-cli" }
 
@@ -80,11 +77,11 @@ func (c *opCLICollector) Collect(_ context.Context, env *Env) ([]Finding, error)
 	if env.GOOS != "darwin" {
 		return nil, ErrSkipped
 	}
-	if fi, err := os.Stat(c.appPath); err != nil || !fi.IsDir() {
+	if fi, err := os.Stat(filepath.Join(env.Root, opAppPath)); err != nil || !fi.IsDir() {
 		return nil, nil
 	}
-	for _, p := range c.opPaths {
-		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() {
+	for _, p := range opPaths {
+		if fi, err := os.Stat(filepath.Join(env.Root, p)); err == nil && fi.Mode().IsRegular() {
 			return []Finding{{
 				Layer:      "ambient",
 				Kind:       "op-cli",

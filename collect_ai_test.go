@@ -33,17 +33,17 @@ func TestAIConfigMCPToken(t *testing.T) {
 func TestOpCLIDetection(t *testing.T) {
 	fx := newFixture(t)
 	fx.goos = "darwin"
-	dir := t.TempDir()
-	c := &opCLICollector{appPath: filepath.Join(dir, "1Password.app"), opPaths: []string{filepath.Join(dir, "brew-op"), filepath.Join(dir, "local-op")}}
+	c := newOpCLICollector()
 
 	if s, _ := fx.runJSON([]Collector{c}); len(s.Findings) != 0 {
 		t.Errorf("finding without the app or op: %+v", s.Findings)
 	}
-	os.Mkdir(c.appPath, 0o755)
+	os.MkdirAll(filepath.Join(fx.root, opAppPath), 0o755)
 	if s, _ := fx.runJSON([]Collector{c}); len(s.Findings) != 0 {
 		t.Errorf("finding with the app but no op: %+v", s.Findings)
 	}
-	os.WriteFile(c.opPaths[1], []byte("binary"), 0o755)
+	os.MkdirAll(filepath.Join(fx.root, "usr/local/bin"), 0o755)
+	os.WriteFile(filepath.Join(fx.root, opPaths[1]), []byte("binary"), 0o755)
 	s, code := fx.runJSON([]Collector{c})
 	if code != 0 || len(s.Findings) != 1 {
 		t.Fatalf("exit %d findings %+v", code, s.Findings)
