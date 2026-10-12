@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")"
 
-unformatted=$(gofmt -l .)
+unformatted=$(gofmt -l *.go)
 if [ -n "$unformatted" ]; then
 	echo "gofmt needed:" "$unformatted"
 	exit 1
