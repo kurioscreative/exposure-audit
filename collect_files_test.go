@@ -285,3 +285,22 @@ func TestKnownFileAdditions(t *testing.T) {
 		t.Errorf("total %v, want 48", s.Total)
 	}
 }
+
+// 1Password's documented setup quotes a path with a space in it.
+func TestIdentityAgentQuotedPathWithSpace(t *testing.T) {
+	fx := newFixture(t)
+	_, fp := fx.opensshKey("none")
+	fx.write(".ssh/config", "Host *\n\tIdentityAgent \"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"\n")
+	fx.stubs["/usr/bin/ssh-add"] = sshAddStub(fp)
+	s := fx.fileCollectorsJSON()
+	if f := findingByKind(s, "ssh-agent"); f == nil || f.Gate != Windowed {
+		t.Fatalf("agent finding %+v; want the 1Password agent, windowed", f)
+	}
+	fx.mu.Lock()
+	defer fx.mu.Unlock()
+	for _, c := range fx.ran {
+		if c.Path == "/usr/bin/ssh-add" && !strings.HasSuffix(c.Env[0], "Group Containers/2BUA8C4S2C.com.1password/t/agent.sock") {
+			t.Errorf("socket %q was cut at the space", c.Env[0])
+		}
+	}
+}

@@ -45,7 +45,9 @@ type sshConfig struct {
 	useKeychain    bool
 }
 
-var sshOptionRx = regexp.MustCompile(`(?im)^\s*(IdentityAgent|UseKeychain)(?:\s*=\s*|\s+)"?([^"\s]+)"?`)
+// A quoted value may contain spaces: 1Password's documented socket lives in
+// "~/Library/Group Containers/...". Group 2 is quoted, group 3 bare.
+var sshOptionRx = regexp.MustCompile(`(?im)^[ \t]*(IdentityAgent|UseKeychain)(?:[ \t]*=[ \t]*|[ \t]+)(?:"([^"\n]+)"|([^"\s]+))`)
 
 // readSSHConfig reads IdentityAgent (A-22) and UseKeychain from every
 // section. Host blocks are not evaluated: any agent the config can point at
@@ -57,7 +59,7 @@ func readSSHConfig(env *Env) sshConfig {
 		return c
 	}
 	for _, m := range sshOptionRx.FindAllSubmatch(text, -1) {
-		key, val := strings.ToLower(string(m[1])), string(m[2])
+		key, val := strings.ToLower(string(m[1])), string(m[2])+string(m[3])
 		if key == "usekeychain" {
 			c.useKeychain = c.useKeychain || strings.EqualFold(val, "yes")
 			continue
