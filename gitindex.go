@@ -21,6 +21,7 @@ const gitIndexLimit = 64 << 20
 
 // gitRepos caches parsed indexes per repository root for one sweep.
 type gitRepos struct {
+	env    *Env
 	byRoot map[string]map[string]bool // root → tracked paths; nil value if unparseable
 }
 
@@ -40,7 +41,7 @@ func repoRoot(dir string) (string, bool) {
 
 // gitDir resolves root/.git. In a worktree, .git is a file holding
 // "gitdir: <path>", and that directory holds the worktree's own index.
-func gitDir(root string) (string, error) {
+func gitDir(env *Env, root string) (string, error) {
 	p := filepath.Join(root, ".git")
 	fi, err := os.Stat(p)
 	if err != nil {
@@ -49,7 +50,7 @@ func gitDir(root string) (string, error) {
 	if fi.IsDir() {
 		return p, nil
 	}
-	b, err := readFile(p, 4096)
+	b, err := env.readFile(p, 4096)
 	if err != nil {
 		return "", err
 	}
@@ -66,8 +67,8 @@ func gitDir(root string) (string, error) {
 
 // gitConfigPath is the config shared by a repository and its worktrees: a
 // worktree's gitdir names the main repository's through its commondir file.
-func gitConfigPath(gd string) string {
-	if b, err := readFile(filepath.Join(gd, "commondir"), 4096); err == nil {
+func gitConfigPath(env *Env, gd string) string {
+	if b, err := env.readFile(filepath.Join(gd, "commondir"), 4096); err == nil {
 		c := strings.TrimSpace(string(b))
 		if !filepath.IsAbs(c) {
 			c = filepath.Join(gd, c)
@@ -89,8 +90,8 @@ func (g *gitRepos) tracked(path string) (tracked, known bool) {
 	}
 	paths, ok := g.byRoot[root]
 	if !ok {
-		if gd, err := gitDir(root); err == nil {
-			if b, err := readFile(filepath.Join(gd, "index"), gitIndexLimit); err == nil {
+		if gd, err := gitDir(g.env, root); err == nil {
+			if b, err := g.env.readFile(filepath.Join(gd, "index"), gitIndexLimit); err == nil {
 				paths, _ = parseGitIndex(b)
 			}
 		}

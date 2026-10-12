@@ -25,6 +25,11 @@ type Env struct {
 	Run     func(ctx context.Context, c Cmd) (stdout []byte, exit int, err error)
 
 	salt Secret // a Secret so formatting an Env never prints it
+
+	// allowProtected is -probe-folders or Full Disk Access inferred yes: only
+	// then may reads resolve into TCC-protected folders (decision 17).
+	allowProtected bool
+	realHome       string // Home with symlinks resolved, e.g. /var → /private/var
 }
 
 // Fingerprint is the salted fingerprint of a secret value.

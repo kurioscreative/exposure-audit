@@ -175,7 +175,7 @@ func appendScan(out []Finding, env *Env, p, kind, title, fix, detail string) []F
 }
 
 func scanTextFile(env *Env, p, kind, title, fix, detail string) (Finding, bool) {
-	text, err := readFile(p, textScanLimit)
+	text, err := env.readFile(p, textScanLimit)
 	if err != nil {
 		return Finding{}, false
 	}
@@ -223,7 +223,7 @@ func (c *dotenvCollector) Collect(ctx context.Context, env *Env) ([]Finding, err
 	ctx, cancel := context.WithTimeout(ctx, c.budget)
 	defer cancel()
 	var out []Finding
-	var repos gitRepos
+	repos := gitRepos{env: env}
 	seenDirs := map[string]bool{}
 	seenConfigs := map[string]bool{}
 
@@ -267,7 +267,7 @@ func (c *dotenvCollector) Collect(ctx context.Context, env *Env) ([]Finding, err
 
 // appendCapture fingerprints group 1 of rx in a project registry config.
 func appendCapture(out []Finding, env *Env, p string, rx *regexp.Regexp, kind, title string) []Finding {
-	text, err := readFile(p, defaultReadLimit)
+	text, err := env.readFile(p, defaultReadLimit)
 	if err != nil {
 		return out
 	}
@@ -297,7 +297,7 @@ func isRailsKey(dir, name string) bool {
 // railsKeyFinding fingerprints the whole key file: it decrypts the app's
 // credentials file, which usually holds service keys.
 func railsKeyFinding(env *Env, p string) (Finding, bool) {
-	b, err := readFile(p, 4096)
+	b, err := env.readFile(p, 4096)
 	if err != nil {
 		return Finding{}, false
 	}
@@ -316,11 +316,11 @@ func railsKeyFinding(env *Env, p string) (Finding, bool) {
 // gitConfigFinding scans dir/.git's config, once per config file, so a
 // worktree and its main repository report the shared config once.
 func gitConfigFinding(env *Env, dir string, seen map[string]bool) (Finding, bool) {
-	gd, err := gitDir(dir)
+	gd, err := gitDir(env, dir)
 	if err != nil {
 		return Finding{}, false
 	}
-	p := gitConfigPath(gd)
+	p := gitConfigPath(env, gd)
 	if seen[p] {
 		return Finding{}, false
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -43,4 +44,30 @@ func TestWalkIsSortedAndSkipsProtectedAndSkipDirs(t *testing.T) {
 	if err := env.walk(ctx, []string{fx.home}, walkOpts{maxDepth: 5}, func(string, fs.DirEntry) {}); err != ErrPartial {
 		t.Errorf("expired budget: err %v, want ErrPartial", err)
 	}
+}
+
+// A dotfile symlinked into a protected folder, and a worktree whose gitdir
+// points into one, are not read unless -probe-folders is given (decision 17).
+func TestReadsNeverResolveIntoProtectedFolders(t *testing.T) {
+	fx := newFixture(t)
+	tok := fx.secret("sk-proj-", 40)
+	ghp := fx.secret("ghp_", 36)
+	fx.write("Documents/dotfiles/zshrc", "export OPENAI_API_KEY="+tok+"\n")
+	if err := os.Symlink(filepath.Join(fx.home, "Documents/dotfiles/zshrc"), filepath.Join(fx.home, ".zshrc")); err != nil {
+		t.Fatal(err)
+	}
+	fx.write("Documents/repo/.git/config", "[remote \"origin\"]\n\turl = https://x:"+ghp+"@github.com/o/r.git\n")
+	fx.write("Documents/repo/.git/worktrees/wt/commondir", "../..\n")
+	fx.write("code/wt/.git", "gitdir: "+filepath.Join(fx.home, "Documents/repo/.git/worktrees/wt")+"\n")
+	fx.write("code/wt/.env", "X=1\n")
+
+	s, _ := fx.runJSON(nil)
+	if s.Total != 0 || len(s.Findings) != 0 {
+		t.Errorf("default run read into Documents: total %v, findings %+v", s.Total, s.Findings)
+	}
+	s, _ = fx.runJSON(nil, "-probe-folders")
+	if s.Total != 15 {
+		t.Errorf("with -probe-folders: total %v, want 15 (service 5 + propagation 10)", s.Total)
+	}
+	fx.assertNoMarkers()
 }

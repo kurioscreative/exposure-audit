@@ -26,14 +26,14 @@ type helperConfig struct {
 func loadHelperConfig(env *Env) helperConfig {
 	var h helperConfig
 	for _, rel := range []string{".gitconfig", ".config/git/config"} {
-		if b, err := readFile(filepath.Join(env.Home, rel), defaultReadLimit); err == nil && gitHelperIsOSXKeychain(string(b)) {
+		if b, err := env.readFile(filepath.Join(env.Home, rel), defaultReadLimit); err == nil && gitHelperIsOSXKeychain(string(b)) {
 			h.gitOSXKeychain = true
 		}
 	}
-	if b, err := readFile(filepath.Join(env.Home, ".config/gh/hosts.yml"), defaultReadLimit); err == nil {
+	if b, err := env.readFile(filepath.Join(env.Home, ".config/gh/hosts.yml"), defaultReadLimit); err == nil {
 		h.ghInKeychain = !ghOAuthTokenRx.Match(b)
 	}
-	if b, err := readFile(filepath.Join(env.Home, ".docker/config.json"), defaultReadLimit); err == nil {
+	if b, err := env.readFile(filepath.Join(env.Home, ".docker/config.json"), defaultReadLimit); err == nil {
 		var cfg struct {
 			CredsStore  string            `json:"credsStore"`
 			CredHelpers map[string]string `json:"credHelpers"`

@@ -37,7 +37,7 @@ func (awsCollector) Collect(ctx context.Context, env *Env) ([]Finding, error) {
 // awsProfiles splits a credentials file into long-lived and session keys.
 // Each key pair is one credential, fingerprinted by its secret access key.
 func awsProfiles(env *Env, p string) []Finding {
-	text, err := readFile(p, defaultReadLimit)
+	text, err := env.readFile(p, defaultReadLimit)
 	if err != nil {
 		return nil
 	}
@@ -91,7 +91,7 @@ func awsCaches(env *Env) []Finding {
 	for _, d := range []string{".aws/sso/cache", ".aws/cli/cache"} {
 		paths, _ := filepath.Glob(filepath.Join(env.Home, d, "*.json")) // sorted
 		for _, p := range paths {
-			b, err := readFile(p, defaultReadLimit)
+			b, err := env.readFile(p, defaultReadLimit)
 			if err != nil {
 				continue
 			}

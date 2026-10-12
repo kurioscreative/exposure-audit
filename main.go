@@ -101,6 +101,8 @@ func (a *App) Main(args []string) int {
 	launch := launchContext(context.Background(), a.Env)
 	// Synchronous and before the collectors: the sweep depends on it.
 	fda := inferFullDiskAccess(a.Env)
+	a.Env.allowProtected = opts.ProbeFolders || fda == "yes"
+	a.Env.realHome, _ = filepath.EvalSymlinks(a.Env.Home)
 	collectors := a.Collectors
 	if collectors == nil {
 		collectors = defaultCollectors(opts, fda)

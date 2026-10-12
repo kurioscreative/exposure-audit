@@ -125,7 +125,7 @@ func bunRows(env *Env) []PreventionRow {
 }
 
 func readConfig(env *Env, rel string) string {
-	b, err := readFile(filepath.Join(env.Home, rel), defaultReadLimit)
+	b, err := env.readFile(filepath.Join(env.Home, rel), defaultReadLimit)
 	if err != nil {
 		return ""
 	}

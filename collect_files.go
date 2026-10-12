@@ -135,7 +135,7 @@ func (s fileSpec) collect(env *Env, rel string) (Finding, bool) {
 		f.Notes = env.fileNotes(p, Static)
 		return f, true
 	}
-	text, err := readFile(p, defaultReadLimit)
+	text, err := env.readFile(p, defaultReadLimit)
 	if err != nil {
 		return f, false
 	}

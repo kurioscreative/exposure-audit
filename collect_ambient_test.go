@@ -230,7 +230,10 @@ func TestDotenvProtectedFolders(t *testing.T) {
 	if s.Total != 5 || len(s.Findings) != 1 {
 		t.Errorf("-probe-folders: total %v findings %+v; want service 5.0", s.Total, s.Findings)
 	}
-	fda := newAmbientCollectors(Options{Roots: []string{fx.home}, MaxDepth: 5}, "yes")[2:]
+	// Full Disk Access inferred yes from a readable Mail folder, as on a real run.
+	fx.goos = "darwin"
+	fx.write("Library/Mail/V10/x", "")
+	fda := newAmbientCollectors(Options{Roots: []string{fx.home}, MaxDepth: 5}, inferFullDiskAccess(fx.env()))[2:]
 	if s, _ = fx.runAmbient(fda); s.Total != 5 {
 		t.Errorf("Full Disk Access yes: total %v, want 5.0", s.Total)
 	}

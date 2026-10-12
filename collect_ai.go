@@ -33,7 +33,7 @@ func (aiConfigCollector) Collect(ctx context.Context, env *Env) ([]Finding, erro
 			return out, ErrPartial
 		}
 		p := filepath.Join(env.Home, rel)
-		text, err := readFile(p, defaultReadLimit)
+		text, err := env.readFile(p, defaultReadLimit)
 		if err != nil {
 			continue // missing, unreadable or not local
 		}

@@ -17,10 +17,18 @@ var errDataless = errors.New("file contents are not local")
 
 const defaultReadLimit = 2 << 20
 
+var errProtected = errors.New("path is in a protected folder")
+
 // readFile reads at most limit bytes of a regular file, refusing files that
-// are not local. Collectors read through this, never os.ReadFile, so no read
-// can trigger an iCloud or file-provider download (invariant 2, A-29).
-func readFile(p string, limit int64) ([]byte, error) {
+// are not local and, unless allowed, files that resolve into a TCC-protected
+// folder. Collectors read through this, never os.ReadFile, so no read can
+// trigger an iCloud or file-provider download (invariant 2, A-29) or a
+// folder prompt (decision 17): dotfile managers often symlink ~/.zshrc into
+// ~/Documents or iCloud Drive, and worktree gitdir files can point there.
+func (e *Env) readFile(p string, limit int64) ([]byte, error) {
+	if !e.allowProtected && e.resolvesIntoProtected(p) {
+		return nil, errProtected
+	}
 	fi, err := os.Stat(p)
 	if err != nil {
 		return nil, err
@@ -96,6 +104,9 @@ func (e *Env) walk(ctx context.Context, roots []string, o walkOpts, fn func(dir 
 		if ctx.Err() != nil {
 			return ErrPartial
 		}
+		if fi, err := os.Lstat(dir); err != nil || isDataless(fi) {
+			return nil // an evicted directory: listing it would download it (A-29)
+		}
 		entries, err := os.ReadDir(dir) // sorted by name
 		if err != nil {
 			return nil // unreadable directories are simply not reachable
@@ -133,11 +144,55 @@ func (e *Env) walk(ctx context.Context, roots []string, o walkOpts, fn func(dir 
 
 // underProtected reports whether p is, or is inside, a TCC-protected folder.
 func (e *Env) underProtected(p string) bool {
-	for _, d := range protectedDirs {
-		q := filepath.Join(e.Home, d)
-		if p == q || strings.HasPrefix(p, q+string(filepath.Separator)) {
-			return true
+	for _, home := range []string{e.Home, e.realHome} {
+		if home == "" {
+			continue
+		}
+		for _, d := range protectedDirs {
+			q := filepath.Join(home, d)
+			if p == q || strings.HasPrefix(p, q+string(filepath.Separator)) {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// resolvesIntoProtected follows symlinks in p one component at a time with
+// lstat and readlink, stopping before it would touch anything inside a
+// protected folder. filepath.EvalSymlinks would lstat inside the target.
+func (e *Env) resolvesIntoProtected(p string) bool {
+	for hops := 0; hops < 16; hops++ {
+		parts := strings.Split(filepath.Clean(p), string(filepath.Separator))
+		cur, next := string(filepath.Separator), ""
+		for i, part := range parts {
+			if part == "" {
+				continue
+			}
+			cur = filepath.Join(cur, part)
+			if e.underProtected(cur) {
+				return true
+			}
+			fi, err := os.Lstat(cur)
+			if err != nil {
+				return false // missing: the read fails on its own
+			}
+			if fi.Mode()&fs.ModeSymlink != 0 {
+				t, err := os.Readlink(cur)
+				if err != nil {
+					return false
+				}
+				if !filepath.IsAbs(t) {
+					t = filepath.Join(filepath.Dir(cur), t)
+				}
+				next = filepath.Join(append([]string{t}, parts[i+1:]...)...)
+				break
+			}
+		}
+		if next == "" {
+			return false
+		}
+		p = next
+	}
+	return true // a symlink loop or a very long chain: refuse
 }

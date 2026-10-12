@@ -54,7 +54,7 @@ var sshOptionRx = regexp.MustCompile(`(?im)^[ \t]*(IdentityAgent|UseKeychain)(?:
 // is one a script could use.
 func readSSHConfig(env *Env) sshConfig {
 	var c sshConfig
-	text, err := readFile(filepath.Join(env.Home, ".ssh", "config"), defaultReadLimit)
+	text, err := env.readFile(filepath.Join(env.Home, ".ssh", "config"), defaultReadLimit)
 	if err != nil {
 		return c
 	}
@@ -172,13 +172,13 @@ func sshKeyFiles(env *Env, cfg sshConfig, inAgent map[string]bool) []Finding {
 		if err != nil || !fi.Mode().IsRegular() || fi.Size() > 20000 {
 			continue
 		}
-		text, err := readFile(p, 20000)
+		text, err := env.readFile(p, 20000)
 		if err != nil || !bytes.Contains(text, []byte("PRIVATE KEY-----")) {
 			continue
 		}
 		pub, enc := parseOpenSSHKey(text)
 		if pub == nil {
-			pub = readPubFile(p + ".pub")
+			pub = readPubFile(env, p+".pub")
 		}
 		f := Finding{Layer: "files", Location: env.tilde(p), Notes: env.fileNotes(p, Static)}
 		if pub != nil {
@@ -290,8 +290,8 @@ func sshString(b []byte) (s, rest []byte, ok bool) {
 }
 
 // readPubFile returns the key blob from an authorized_keys-style .pub file.
-func readPubFile(p string) []byte {
-	b, err := readFile(p, 20000)
+func readPubFile(env *Env, p string) []byte {
+	b, err := env.readFile(p, 20000)
 	if err != nil {
 		return nil
 	}

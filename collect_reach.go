@@ -219,7 +219,10 @@ func measure(ctx context.Context, root string) (total int64, files int, partial 
 		for _, e := range entries {
 			switch {
 			case e.IsDir():
-				stack = append(stack, filepath.Join(d, e.Name()))
+				// Listing an evicted directory downloads it: count it, do not enter it.
+				if fi, err := e.Info(); err == nil && !isDataless(fi) {
+					stack = append(stack, filepath.Join(d, e.Name()))
+				}
 			case e.Type().IsRegular():
 				if fi, err := e.Info(); err == nil {
 					files++
