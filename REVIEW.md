@@ -32,7 +32,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | Spec review                 | done        | —                                                               |
 | M0 skeleton and guardrails  | done        | —                                                               |
 | M1 core                     | done        | —                                                               |
-| M2 collector parity         | not started | M1; the Keychain classifier also needs Glenn's sanitized sample |
+| M2 collector parity         | in progress | M1; the Keychain classifier also needs Glenn's sanitized sample |
 | M3 matcher precision        | not started | M1                                                              |
 | M4 helper inference         | not started | M2 Keychain parser                                              |
 | M5 macOS validation (Go)    | not started | M2                                                              |

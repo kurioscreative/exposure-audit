@@ -130,7 +130,44 @@ type Snapshot struct {
 	Findings       []Finding         `json:"findings"`
 	Credentials    []Credential      `json:"credentials"`
 	Items          []Item            `json:"items"`
+	Reach          []ReachRow        `json:"reach,omitempty"`
+	Prevention     []PreventionRow   `json:"prevention,omitempty"`
+	Keychain       *KeychainStats    `json:"keychain,omitempty"`
 	Diff           *Diff             `json:"diff,omitempty"`
+}
+
+// ReachRow is one data-reach target: measured, not scored (decision 1).
+type ReachRow struct {
+	Label   string `json:"label"`
+	Path    string `json:"path"`   // ~/relative
+	Status  string `json:"status"` // readable, blocked, not probed
+	Bytes   int64  `json:"bytes,omitempty"`
+	Files   int    `json:"files,omitempty"`
+	Partial bool   `json:"partial,omitempty"` // size budget hit: sizes are lower bounds
+	Note    string `json:"note,omitempty"`
+}
+
+// PreventionRow is one install-script control (decision 19), unscored.
+type PreventionRow struct {
+	Tool    string `json:"tool"`    // npm, Yarn, pnpm, Bun
+	Setting string `json:"setting"` // e.g. ignore-scripts
+	State   string `json:"state"`   // on, off, not configured
+	Fix     string `json:"fix,omitempty"`
+}
+
+// KeychainStats counts login keychain password items by access class.
+type KeychainStats struct {
+	Total    int `json:"total"`
+	Silent   int `json:"silent"`
+	AppGated int `json:"app_gated"`
+	Unknown  int `json:"unknown"`
+}
+
+// sectioner is implemented by collectors that also report unscored data.
+// Section is called only after Collect has returned, never for a collector
+// that timed out, so the collector's fields are no longer being written.
+type sectioner interface {
+	Section(s *Snapshot)
 }
 
 func sortedKeys[V any](m map[string]V) []string {

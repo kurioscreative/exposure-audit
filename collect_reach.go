@@ -70,3 +70,6 @@ func parentChain(ctx context.Context, env *Env) []string {
 	}
 	return chain
 }
+
+// inferFullDiskAccess returns yes, no or unknown (R-03). Implemented in M2.
+func inferFullDiskAccess(env *Env) string { return "unknown" }

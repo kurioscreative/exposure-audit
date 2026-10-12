@@ -25,6 +25,7 @@ type Options struct {
 	SkipKeychain bool
 	Roots        []string
 	MaxDepth     int
+	Sanitize     bool // -sanitize-keychain-sample
 }
 
 // App is the whole tool, runnable in-process so tests never exec the binary
@@ -58,6 +59,7 @@ func (a *App) parseFlags(args []string) (Options, error) {
 	fs.BoolVar(&o.SkipKeychain, "skip-keychain", false, "skip the login keychain access-list check")
 	fs.StringVar(&roots, "roots", "", "comma-separated directories for the .env sweep (default: home)")
 	fs.IntVar(&o.MaxDepth, "max-depth", 5, "depth limit for the .env sweep")
+	fs.BoolVar(&o.Sanitize, "sanitize-keychain-sample", false, "print a sanitized login keychain dump for testdata/, then exit")
 	if err := fs.Parse(args); err != nil {
 		return o, err
 	}
@@ -80,6 +82,9 @@ func (a *App) Main(args []string) int {
 	if err != nil {
 		return 2
 	}
+	if opts.Sanitize {
+		return a.sanitizeKeychainSample()
+	}
 	stateDir, err := prepareStateDir(a.Env.Home)
 	if err != nil {
 		fmt.Fprintln(a.Stderr, "exposure-audit: the state directory ~/.exposure-audit is unusable")
@@ -93,12 +98,13 @@ func (a *App) Main(args []string) int {
 
 	a.Env.salt = NewSecret(salt)
 
+	launch := launchContext(context.Background(), a.Env)
+	// Synchronous and before the collectors: the sweep depends on it.
+	fda := inferFullDiskAccess(a.Env)
 	collectors := a.Collectors
 	if collectors == nil {
-		collectors = defaultCollectors(opts)
+		collectors = defaultCollectors(opts, fda)
 	}
-	launch := launchContext(context.Background(), a.Env)
-	fda := "unknown"
 	res := runCollectors(collectors, a.Env, a.Deadline)
 	snap := &Snapshot{
 		Schema:         snapshotSchema,
@@ -109,6 +115,11 @@ func (a *App) Main(args []string) int {
 		Collectors:     res.Statuses,
 		Errors:         res.Errors,
 		Findings:       res.Findings,
+	}
+	for _, c := range collectors {
+		if sec, ok := c.(sectioner); ok && res.Statuses[c.Name()] != Timeout {
+			sec.Section(snap)
+		}
 	}
 	sortFindings(snap.Findings)
 	snap.Credentials, snap.Items, snap.Total = score(snap.Findings)
@@ -191,7 +202,11 @@ func (a *App) openReport(stateDir string, report []byte) {
 	time.Sleep(a.OpenWait)
 }
 
-func defaultCollectors(Options) []Collector { return nil }
+// defaultCollectors lists every collector. fda is the Full Disk Access
+// inference, which decides whether walks may enter protected folders.
+func defaultCollectors(opts Options, fda string) []Collector {
+	return []Collector{}
+}
 
 // sortFindings gives findings a stable order regardless of collector timing.
 func sortFindings(fs []Finding) {
