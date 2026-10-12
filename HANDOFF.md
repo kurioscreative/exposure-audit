@@ -127,6 +127,7 @@ Collectors never call `os.Getenv`, `os.UserHomeDir`, `exec.Command`, or `time.No
 type Env struct {
     Home    string
     Environ map[string]Secret // values are secrets too; a map[string]string leaks under t.Logf("%+v", env) (A-10)
+    // Plain(name) returns the value of a variable on PlainEnv as a string, and "" for any other name.
     GOOS    string
     Now     time.Time
     Run     func(ctx context.Context, c Cmd) (stdout []byte, exit int, err error)
@@ -146,6 +147,15 @@ type Collector interface {
 
 `Run` returns plain bytes because none of the four permitted programs prints a secret value: the Keychain dump is metadata (invariant 7), `ssh-add -l` prints public fingerprints, `ps` prints process names. If a later change ever runs a program whose output is a secret, `Run` must return a `Secret` for it (A-09).
 
+A few variables are needed as plain strings and are not secrets. `Env.Plain(name)` returns them, and only them:
+
+```go
+// The only environment variables readable as plain text. A test asserts this list is exactly these five.
+var PlainEnv = []string{"__CFBundleIdentifier", "TERM_PROGRAM", "SSH_AUTH_SOCK", "TMUX", "USER"}
+```
+
+The context key needs the first two; the SSH collector needs `SSH_AUTH_SOCK` to pass to `ssh-add` and to recognise a 1Password socket (A-33).
+
 This is what makes every collector testable on Linux: tests pass a temp home, a fake environment, and a stub `Run` that returns canned output (for example a sample Keychain dump). It also gives one place to enforce invariant 8.
 
 ### Collectors and the runner
@@ -154,9 +164,11 @@ Collectors run concurrently under one global deadline of 60 seconds, with per-co
 
 - `recover` only catches panics in its own goroutine. Collectors must not start goroutines with a bare `go`; they use a runner-provided helper that recovers and reports (A-11).
 - A collector that ignores `ctx` (a hung mount, a file-provider directory) cannot be stopped. At the deadline the runner stops waiting, records a timeout, and renders without it.
-- Each collector reports a status: `complete`, `partial` (budget hit), `failed`, or `timeout`. The diff and the exit code depend on it (A-13).
+- Each collector reports a status: `complete`, `partial` (budget hit), `failed`, `timeout`, or `skipped` (not applicable, such as the Keychain on Linux, or turned off, such as `-skip-keychain`). The diff treats every status except `complete` as not complete, so skipping the Keychain does not look like a 231-point improvement. The exit code treats `skipped` as normal (A-13, A-37).
 - Never read a file that iCloud or a file provider has evicted: check `SF_DATALESS` (`0x40000000` in `syscall.Stat_t.Flags`) first. Reading one downloads it, which is network traffic caused by the tool (A-29). Size measurement uses `stat` only.
 - Walks are in sorted order, so a budget cut drops the same files each time.
+- Walks never enter TCC-protected folders unless `-probe-folders` is set or Full Disk Access is inferred `yes`: `Desktop`, `Documents`, `Downloads`, `Library/Mobile Documents`, `Library/CloudStorage`, and `Pictures`. Listing one can raise the permission prompt that decision 17 makes opt-in. The prototype had this rule (`skip_protected`) (A-35).
+- Full Disk Access inference (M2) runs synchronously before the concurrent collectors start, because the sweep depends on it. It is three directory reads and cannot prompt.
 
 ### The Secret type
 
@@ -194,6 +206,7 @@ Credential  one fingerprint across all findings (derived in score.go)
 Item        one entry in "Fix first" (derived in score.go)
   credentials that appear in exactly the same set of findings (by SlotID), grouped
   Title, Locations, Credentials, Tier, Score
+  Title is the title of the highest-scoring finding among them (A-39)
 ```
 
 - `Class`: `propagation` (npm, GitHub, registries, SSH: makes the victim a worm vector), `cloud`, `agent`, `service`, `generic`.
@@ -201,10 +214,10 @@ Item        one entry in "Fix first" (derived in score.go)
 - `Lifetime`: `static` or `session`.
 - `Committed`: the file is tracked by git (dotenv files only).
 - `Fingerprint`: `hex(HMAC-SHA256(salt, value))[:12]`. Salt is 32 random bytes in `~/.exposure-audit/salt`.
-- SSH keys are fingerprinted by public key, not file text: the `SHA256:` value `ssh-add -l` prints, which is `base64(sha256(public key blob))` without padding. The public half of an `openssh-key-v1` file is cleartext even when the private half is encrypted. This makes a key file and the same key in an agent one credential, and adding a passphrase is not a rotation (A-15).
-- Keychain items cannot be fingerprinted by value (invariant 7). Fingerprint `kc|service|account`; a changed `mdat` on the same item marks it rotated.
+- SSH keys are fingerprinted by public key, not file text: the `SHA256:` value `ssh-add -l` prints, which is `base64(sha256(public key blob))` without padding. The public half of an `openssh-key-v1` file is cleartext even when the private half is encrypted. This makes a key file and the same key in an agent one credential, and adding a passphrase is not a rotation (A-15). If the public key cannot be extracted (an encrypted PEM key, an unknown format) and no `.pub` file sits next to it, fingerprint the file text instead at medium confidence (A-38).
+- Keychain items cannot be fingerprinted by value (invariant 7). Their hit fingerprint is `HMAC(kc|service|account|mdat)`, and their `SlotID` is `sha256(kind | HMAC(kc|service|account))[:12]`. A changed `mdat` changes `ID` but not `SlotID`, so the ordinary rotation rule detects it. The persisted `Location` is built from that `SlotID` (section 5, State on disk), never the reverse (A-34).
 - Presence-only findings (a credential store that is not parsed) fingerprint `kind|relative path`.
-- `SlotID`: `sha256(kind | location)[:12]`. Identifies where credentials live.
+- `SlotID`: `sha256(kind | location)[:12]`, except Keychain items (above). Identifies where credentials live.
 - `ID`: `sha256(kind | location | sorted fingerprints)[:12]`. Identifies the specific credentials in that place.
 
 Two ids let the diff tell "rotated" (same slot, different id) from "resolved" and "new". The prototype has only `ID` and cannot.
@@ -260,7 +273,7 @@ Decisions 7–9 are the response. The ranking fixture in section 11 encodes it.
   history/YYYYMMDDTHHMMSSZ.json     one snapshot per run, UTC
 ```
 
-**History contents** (decision 16). Snapshots hold findings with titles and locations, so the diff is readable. Keychain findings are the exception: their `Location` is `login keychain item <SlotID>`. Service and account names appear only in live output (the terminal summary and the `-open` report), never in history or `-json`. The report's "How to read this" says that `~/.exposure-audit` is readable by the same attacker the tool models.
+**History contents** (decision 16). Snapshots hold findings with titles and locations, so the diff is readable. Keychain findings are the exception: their persisted `Location` is `login keychain item <SlotID>`, using the Keychain `SlotID` defined in the data model. Service and account names appear only in live output (the terminal summary and the `-open` report), never in history or `-json`. The report's "How to read this" says that `~/.exposure-audit` is readable by the same attacker the tool models.
 
 **Report** (decision 15). With `-open`: delete any stale `report.html`, write it 0600, run `/usr/bin/open` on it, wait 5 seconds so the browser can load it, then delete it. Every run deletes a leftover `report.html` at startup. Without `-open`, no HTML is written.
 
@@ -375,7 +388,7 @@ Each collector ships with fixture tests through `Env`.
 - Ambient: environment (agent class, URL credentials), shell startup files, history, dotenv sweep with sorted walk and time budget, committed detection via `gitindex.go`, `.git/config` remotes.
 - AI tooling configs.
 - 1Password CLI (decision 10): if `/Applications/1Password.app` exists and an `op` binary exists at `/opt/homebrew/bin/op` or `/usr/local/bin/op` (stat only, never executed), emit one finding: kind `op-cli`, class propagation (a vault usually holds publishing tokens), gate `windowed`, confidence low, fingerprint `op-cli`. Detail: "If the 1Password app's CLI integration is on, a script in a terminal that unlocked `op` in the last ~10 minutes can read the vault without a prompt." Unverified on macOS.
-- Context and reach: context key (section 5), `ps` chain for display, reach table with sizes under a per-target budget, protected folders only with `-probe-folders`. Full Disk Access is inferred: `yes` if any of Mail, Messages or Safari data is readable, `no` if all that exist are denied, `unknown` otherwise. When `yes`, emit the pinned tier-0 item: "Full Disk Access granted to <app>", fix "Remove it in System Settings → Privacy & Security → Full Disk Access unless something you run from this terminal needs it."
+- Context and reach: context key (section 5), `ps` chain for display, reach table with sizes under a per-target budget. Targets that need Full Disk Access (Mail, Messages, Safari) fail silently and never prompt, so they are always checked. TCC-protected folders (Desktop, Documents, Downloads, iCloud Drive, cloud storage, Photos, Contacts, Calendars, Notes) are checked only with `-probe-folders` or when Full Disk Access is `yes` (A-36). Full Disk Access is inferred: `yes` if any of Mail, Messages or Safari data is readable, `no` if all that exist are denied, `unknown` otherwise. When `yes`, emit the pinned tier-0 item: "Full Disk Access granted to <app>", fix "Remove it in System Settings → Privacy & Security → Full Disk Access unless something you run from this terminal needs it."
 - Prevention (decision 19), unscored, config files only: npm `ignore-scripts` in `~/.npmrc`; Yarn Berry `enableScripts` and `npmMinimalAgeGate` in `~/.yarnrc.yml`; pnpm `minimum-release-age` and `only-built-dependencies` in pnpm's global rc (`~/Library/Preferences/pnpm/rc`); Bun `~/.bunfig.toml` `[install]` settings. Report each as on, off, or not configured, with a fix line. Key names and paths are from memory at medium confidence; confirm each against the tool's documentation and cite it in a comment.
 - Keychain: parser and classifier. First build `-sanitize-keychain-sample`: it runs `security dump-keychain -a`, keeps structure and the fixed vocabulary (`class`, attribute tags, `authorizations`, `applications`, partition markers, `mdat` format), and replaces every attribute value, description, application path outside `/usr/bin`, `/bin`, `/usr/libexec`, `/System` and `/Library/Developer`, and partition value other than the `apple:`, `apple-tool:` and `teamid:` prefixes with a same-length placeholder. **Glenn** runs it, reads the output, and commits it to `testdata/`. Then write the classifier against that sample, including partition lists: a command-line tool counts as a silent reader only if its partition (`apple-tool:` for Apple-signed tools such as `/usr/bin/security`) is in the item's partition list. Record the observed partition format in a code comment.
 - Report via `html/template` with embedded CSS, written only for `-open` (section 5).
@@ -483,6 +496,8 @@ Each is a separate fake home, so totals do not mix.
 | Full Disk Access        | readable `Library/Mail`                                                                                                                                           | pinned tier-0 item; total unchanged                                     |
 | Partial run             | second run with the dotenv budget forced to zero                                                                                                                  | `.env` findings `unknown`, delta excludes them, exit code 1             |
 | Prevention              | `.npmrc` with `ignore-scripts=true`                                                                                                                               | Prevention shows npm "on"; total unchanged                              |
+| Protected folders | `Documents/app/.env` with an `sk_live_` value | default run: not read and not listed; with `-probe-folders`: service 5.0 |
+| Skipped collector | second run with `-skip-keychain` after a run that had Keychain findings (stub dump) | Keychain findings `unknown`, delta excludes them, exit code 0 |
 | Leak through location   | a parser that builds `Location` from a fixture value (test-only collector)                                                                                        | write aborted, nothing written, error category recorded                 |
 
 ## 12. Keychain dump format, as the prototype assumes it

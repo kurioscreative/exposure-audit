@@ -105,6 +105,13 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | A-30 | Snapshot filenames collided within one second and overwrote                                                                      | [spec]            | §5 State         | spec   |
 | A-31 | Exit codes were mentioned but never specified                                                                                    | [spec]            | §2 d18           | spec   |
 | A-32 | Report the install-script controls (npm, Yarn, pnpm, Bun)                                                                        | [spec] medium     | §2 d19, M2       | spec   |
+| A-33 | `Environ map[string]Secret` left no way to read the terminal id or `SSH_AUTH_SOCK`; add a five-name `Env.Plain` allowlist | [spec] | §5 Env | spec |
+| A-34 | Keychain `SlotID` and `Location` were defined in terms of each other; `SlotID` now comes from `HMAC(kc|service|account)` | [spec] | §5 Data model | spec |
+| A-35 | The default `.env` sweep would walk Desktop, Documents and iCloud and could raise the prompt decision 17 made opt-in | [spec] | §5 Collectors | spec |
+| A-36 | Full Disk Access inference needs Mail, Messages and Safari checked on every run; only TCC folders are opt-in | [spec] | M2 | spec |
+| A-37 | Turned-off or inapplicable collectors need a `skipped` status, or `-skip-keychain` looks like a large improvement | [spec] | §5, §11 | spec |
+| A-38 | SSH public-key fingerprint had no fallback for encrypted PEM or unknown formats | [spec] | §5 Data model | spec |
+| A-39 | Title of a "Fix first" item spanning several findings was undefined | [spec] | §5 Data model | spec |
 
 ## Findings from the real run (2026-10-12)
 
