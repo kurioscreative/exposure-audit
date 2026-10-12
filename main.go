@@ -71,6 +71,9 @@ func (a *App) parseFlags(args []string) (Options, error) {
 	o.Roots = []string{a.Env.Home}
 	if roots != "" {
 		o.Roots = strings.Split(roots, ",")
+		for i, r := range o.Roots {
+			o.Roots[i] = filepath.Clean(r) // "~/" must equal the home for the sweep's home-level skips
+		}
 	}
 	return o, nil
 }
@@ -120,7 +123,12 @@ func (a *App) Main(args []string) int {
 		Findings:       res.Findings,
 	}
 	for _, c := range collectors {
-		if sec, ok := c.(sectioner); ok && res.Statuses[c.Name()] != Timeout {
+		// Only collectors that returned normally: a panicked one may still have
+		// runner-started goroutines writing to its fields.
+		if st := res.Statuses[c.Name()]; st != Complete && st != Partial {
+			continue
+		}
+		if sec, ok := c.(sectioner); ok {
 			sec.Section(snap)
 		}
 	}

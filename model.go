@@ -164,8 +164,8 @@ type KeychainStats struct {
 }
 
 // sectioner is implemented by collectors that also report unscored data.
-// Section is called only after Collect has returned, never for a collector
-// that timed out, so the collector's fields are no longer being written.
+// Section is called only for a complete or partial collector, after Collect
+// returned, so the collector's fields are no longer being written.
 type sectioner interface {
 	Section(s *Snapshot)
 }
