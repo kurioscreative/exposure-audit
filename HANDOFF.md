@@ -126,10 +126,12 @@ Collectors never call `os.Getenv`, `os.UserHomeDir`, `exec.Command`, or `time.No
 ```go
 type Env struct {
     Home    string
+    Root    string            // "/" except in tests: the few paths outside the home resolve under it (A-41)
     Environ map[string]Secret // values are secrets too; a map[string]string leaks under t.Logf("%+v", env) (A-10)
     // Plain(name) returns the value of a variable on PlainEnv as a string, and "" for any other name.
     GOOS    string
     Now     time.Time
+    PID     int               // start of the ps chain for the context key
     Run     func(ctx context.Context, c Cmd) (stdout []byte, exit int, err error)
 }
 
