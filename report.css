@@ -1,0 +1,29 @@
+:root{--bg:#fbfaf7;--card:#fff;--ink:#1c1b19;--mute:#6b6862;--line:#e4e1d9;--hot:#b3261e;--warm:#b06000;
+--cool:#1f6f5c;--chip:#f1eee7}
+@media(prefers-color-scheme:dark){:root{--bg:#161513;--card:#1f1e1b;--ink:#ece9e2;--mute:#a09c93;
+--line:#34322d;--hot:#ff8a80;--warm:#f2b24c;--cool:#6fd0b5;--chip:#2a2925}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);
+font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:28px 16px 64px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}h2{font-size:16px;margin:36px 0 12px}
+.sub{color:var(--mute);font-size:13px}
+.hero{display:flex;gap:24px;align-items:flex-end;flex-wrap:wrap;margin:24px 0 8px}
+.score{font-size:64px;font-weight:650;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.delta{font-size:14px;font-weight:600}.up{color:var(--hot)}.down{color:var(--cool)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile b{display:block;font-size:22px;font-variant-numeric:tabular-nums}.tile span{color:var(--mute);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
+.card h3{margin:0;font-size:15px}.loc{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mute);
+word-break:break-all;margin:3px 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{background:var(--chip);border-radius:99px;padding:2px 9px;font-size:11.5px;white-space:nowrap}
+.chip.hot{color:var(--hot)}.chip.warm{color:var(--warm)}.chip.cool{color:var(--cool)}
+.fix{border-top:1px solid var(--line);margin-top:10px;padding-top:9px;font-size:13.5px}
+.fix b{font-weight:600}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500;font-size:12px}td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+details{margin-top:8px}summary{cursor:pointer;color:var(--mute);font-size:13px}
+ul{padding-left:18px;margin:6px 0}li{margin:3px 0}
