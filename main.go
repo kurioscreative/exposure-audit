@@ -205,7 +205,14 @@ func (a *App) openReport(stateDir string, report []byte) {
 // defaultCollectors lists every collector. fda is the Full Disk Access
 // inference, which decides whether walks may enter protected folders.
 func defaultCollectors(opts Options, fda string) []Collector {
-	return []Collector{}
+	var cs []Collector
+	for _, group := range []func(Options, string) []Collector{
+		newAICollectors,
+		newReachCollectors,
+	} {
+		cs = append(cs, group(opts, fda)...)
+	}
+	return cs
 }
 
 // sortFindings gives findings a stable order regardless of collector timing.
