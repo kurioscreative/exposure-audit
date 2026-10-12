@@ -61,8 +61,8 @@ func TestEnvironmentFixtures(t *testing.T) {
 			if s.Total != c.total || len(fs) != 1 || len(fs[0].Hits) != 1 || fs[0].Hits[0].Class != c.class {
 				t.Fatalf("total %v findings %+v; want %v %v", s.Total, s.Findings, c.total, c.class)
 			}
-			if fs[0].Location != "environment: "+c.name {
-				t.Errorf("location %q", fs[0].Location)
+			if fs[0].Location != "environment ("+string(c.class)+")" || fs[0].Hits[0].Name != c.name {
+				t.Errorf("location %q, hit name %q", fs[0].Location, fs[0].Hits[0].Name)
 			}
 			if c.class == Agent && fs[0].Fix != fixText["agent"] {
 				t.Errorf("agent token without the agent fix")

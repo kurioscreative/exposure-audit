@@ -65,12 +65,15 @@ func (envCollector) Collect(_ context.Context, env *Env) ([]Finding, error) {
 		slices.Sort(vars)
 		vars = slices.Compact(vars)
 		f := Finding{
-			Layer:    "ambient",
-			Kind:     "env",
-			Title:    "Secrets exported in this shell's environment",
-			Location: "environment: " + strings.Join(vars, ", "), // variable names, never values
+			Layer: "ambient",
+			Kind:  "env",
+			Title: "Secrets exported in this shell's environment",
+			// A fixed label per class keeps the SlotID stable when variables
+			// come and go, so the diff can say rotated (A-46). Names, never
+			// values, go in Detail and Hit.Name.
+			Location: "environment (" + string(class) + ")",
 			Lifetime: Static,
-			Detail:   "Every child process, including install scripts, inherits these.",
+			Detail:   "Variables: " + strings.Join(vars, ", ") + ". Every child process, including install scripts, inherits these.",
 			Fix:      fixText["env"],
 			Hits:     env.hits(ms),
 		}

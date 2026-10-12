@@ -67,7 +67,7 @@ func TestAcceptanceBaseFixture(t *testing.T) {
 		"~/code/app/.env=8.0",
 		"~/.zshrc=5.0",
 		// tier 4, 5
-		"environment: MY_SERVICE_TOKEN=3.0",
+		"environment (generic)=3.0",
 		"~/.ssh/id_enc=1.0",
 	}
 	if !slices.Equal(got, want) {
@@ -166,6 +166,19 @@ func TestAcceptanceSkipKeychain(t *testing.T) {
 		if c.State != Unknown {
 			t.Errorf("change %+v; Keychain findings should be unknown, not %s", c, c.State)
 		}
+	}
+	fx.assertNoMarkers()
+}
+
+// A-46: adding or replacing a secret variable is rotation, not new plus resolved.
+func TestEnvironmentChangeIsRotation(t *testing.T) {
+	fx := newFixture(t)
+	fx.setenv("MY_SERVICE_TOKEN", fx.secret("", 32))
+	fx.runJSON(nil)
+	fx.setenv("OTHER_SERVICE_TOKEN", fx.secret("", 32))
+	s, _ := fx.runJSON(nil)
+	if got := stateOf(s.Diff, "environment (generic)"); got != Rotated || s.Diff.Delta != 3 {
+		t.Errorf("state %q delta %v; want rotated, +3.0", got, s.Diff.Delta)
 	}
 	fx.assertNoMarkers()
 }
