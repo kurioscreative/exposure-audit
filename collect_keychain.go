@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -349,17 +350,18 @@ func kcService(it *kcItem) string {
 	return "(unnamed)"
 }
 
-// keychainFinding builds a finding whose persisted text never names the
-// service or account (decision 16). SlotID is sha256(kind | HMAC(kc|service|
-// account)) and the hit fingerprint adds mdat, so a changed mdat is a
-// rotation (A-34).
+// keychainFinding builds a finding whose persisted text holds nothing parsed
+// from the dump: no service, account or tool path (decision 16, A-53). Those
+// go only to the Live fields. The hit fingerprint adds mdat to the slot key,
+// so a changed mdat is a rotation (A-34).
 func keychainFinding(env *Env, it *kcItem, v kcVerdict) Finding {
 	svc, acct := kcService(it), it.attrs["acct"]
-	slot := shortHash(keychainKind, env.FingerprintLabel("kc|"+svc+"|"+acct))
-	via := "any application"
+	slot := shortHash(keychainKind, env.FingerprintLabel(kcSlotKey(it)))
+	via, liveVia := "any application", "any application"
 	if !v.anyApp {
-		via = strings.Join(v.tools, ", ")
+		via, liveVia = "a command-line tool", strings.Join(v.tools, ", ")
 	}
+	const detail = "Access list trusts %s, so a script can read it by calling that tool. Value was not read by this audit."
 	live := "login keychain: " + svc
 	if acct != "" {
 		live += " (" + acct + ")"
@@ -376,7 +378,22 @@ func keychainFinding(env *Env, it *kcItem, v kcVerdict) Finding {
 		Gate:         Silent,
 		Confidence:   Medium,
 		Fix:          fixText["keychain"],
-		Detail:       "Access list trusts " + via + ", so a script can read it by calling that tool. Value was not read by this audit.",
-		Hits:         []Hit{{Fingerprint: env.FingerprintLabel("kc|" + svc + "|" + acct + "|" + it.attrs["mdat"]), Class: keychainClass(svc, acct)}},
+		Detail:       fmt.Sprintf(detail, via),
+		LiveDetail:   fmt.Sprintf(detail, liveVia),
+		Hits:         []Hit{{Fingerprint: env.FingerprintLabel(kcSlotKey(it) + "|" + it.attrs["mdat"]), Class: keychainClass(svc, acct)}},
 	}
+}
+
+// kcSlotKey identifies one Keychain item across runs. HANDOFF §5 specifies
+// kc|service|account; A-54 widens it with the item class and, for internet
+// passwords, protocol, port and path, because items with no name, and inet
+// items differing only in those, otherwise share a slot and the diff and
+// Fix-first grouping merge unrelated items. mdat stays out: a changed mdat
+// must keep the slot so it reads as a rotation.
+func kcSlotKey(it *kcItem) string {
+	k := "kc|" + it.class + "|" + kcService(it) + "|" + it.attrs["acct"]
+	if it.class == "inet" {
+		k += "|" + it.attrs["srvr"] + "|" + it.attrs["ptcl"] + "|" + it.attrs["port"] + "|" + it.attrs["path"]
+	}
+	return k
 }

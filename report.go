@@ -35,6 +35,7 @@ type displayItem struct {
 	Hot       bool
 	Score     string
 	Secrets   int
+	Detail    string
 	Fix       string
 }
 
@@ -48,7 +49,7 @@ func displayItems(s *Snapshot, limit int) []displayItem {
 			d.Score = fmt.Sprintf("%.1f", it.Score)
 		}
 		if f := byID[it.titleFrom]; f != nil {
-			d.Title = f.DisplayTitle()
+			d.Title, d.Detail = f.DisplayTitle(), f.DisplayDetail()
 		}
 		if len(it.Findings) > 0 {
 			d.Locations = nil
@@ -325,6 +326,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 {{range .Items}}<div class="card"><h3>{{.N}}. {{.Title}}</h3>
 {{range .Locations}}<div class="loc">{{.}}</div>{{end}}
 <div class="chips"><span class="chip{{if .Hot}} hot{{end}}">{{.Tier}}</span><span class="chip">{{.Score}}</span>{{if gt .Secrets 1}}<span class="chip">{{.Secrets}} secrets</span>{{end}}</div>
+{{if .Detail}}<div>{{.Detail}}</div>{{end}}
 <div class="fix"><b>Fix:</b> {{.Fix}}</div></div>
 {{else}}<div class="card">Nothing found. Run it from the terminal you actually install packages from to be sure.</div>{{end}}
 

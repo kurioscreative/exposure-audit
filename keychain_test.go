@@ -219,7 +219,7 @@ func TestHelperInferenceEnrichesKeychainFindings(t *testing.T) {
 	for title, class := range map[string]Class{
 		"GitHub CLI token, readable by any process through /usr/bin/security":                       Propagation,
 		"Git credentials in the Keychain, usable by any process through git-credential-osxkeychain": Propagation,
-		"Docker registry credentials, usable by any process through docker-credential-desktop":      Service,
+		"Docker registry credentials, usable by any process through a docker-credential helper":     Service,
 		"Keychain item readable without a prompt":                                                   Cloud,
 	} {
 		if c, ok := titles[title]; !ok || c != class {
@@ -232,7 +232,7 @@ func TestHelperInferenceEnrichesKeychainFindings(t *testing.T) {
 		t.Errorf("total %v, plain %v; want plain + 5 (Bitbucket class only)", s.Total, ps.Total)
 	}
 	r := fx.runApp(cs)
-	for _, want := range []string{"Git credentials for github.com", "Git credentials for bitbucket.org", "Docker registry credentials for index.docker.io"} {
+	for _, want := range []string{"Git credentials for github.com", "Git credentials for bitbucket.org", "Docker registry credentials for index.docker.io, usable by any process through docker-credential-desktop"} {
 		if !strings.Contains(r.stdout, want) {
 			t.Errorf("live summary lacks %q:\n%s", want, r.stdout)
 		}
@@ -356,5 +356,61 @@ func TestSanitizeHexDescription(t *testing.T) {
 		if got := sanitizePartitions(d); got == d || len(got) != len(d) {
 			t.Errorf("sanitizePartitions(%q) = %q; want a same-length placeholder", d, got)
 		}
+	}
+}
+
+// Nothing parsed from the dump reaches persisted fields: tool paths and the
+// docker-credential name appear only in live output (A-53).
+func TestKeychainToolPathsAreLiveOnly(t *testing.T) {
+	dump := readTestdata(t, "keychain_variants.txt")
+	fx := helperFixture(t, &dump)
+	cs := newKeychainCollectors(Options{}, "unknown")
+	parsed := []string{"/usr/bin/security", "CommandLineTools", "/opt/homebrew/Cellar", "docker-credential-desktop", "/usr/local/bin"}
+	s, _ := fx.runJSON(cs)
+	persisted := append(fx.historyFiles(), fx.runApp(cs, "-json").stdout)
+	for _, f := range s.Findings {
+		persisted = append(persisted, f.Notes...)
+		for _, h := range f.Hits {
+			persisted = append(persisted, h.Name)
+		}
+	}
+	for _, o := range persisted {
+		// The gh title names /usr/bin/security as fixed HANDOFF wording, not parsed text.
+		o = strings.ReplaceAll(o, "readable by any process through /usr/bin/security", "")
+		for _, p := range parsed {
+			if strings.Contains(o, p) {
+				t.Errorf("parsed text %q persisted", p)
+			}
+		}
+	}
+	// The -open report is live output: read it while open has it.
+	var report string
+	fx.stubs["/usr/bin/open"] = func(a []string) ([]byte, int) {
+		b, _ := os.ReadFile(a[0])
+		report = string(b)
+		return nil, 0
+	}
+	fx.runApp(cs, "-open")
+	for _, p := range []string{"/usr/local/bin/docker-credential-desktop", "/usr/bin/security"} {
+		if !strings.Contains(report, p) {
+			t.Errorf("live report lacks %q", p)
+		}
+	}
+}
+
+// Internet passwords that differ only by port are distinct slots (A-54).
+func TestKeychainInetPortsAreDistinctSlots(t *testing.T) {
+	item := func(port string) string {
+		return "keychain: \"/Users/x/Library/Keychains/login.keychain-db\"\nversion: 512\nclass: \"inet\"\nattributes:\n" +
+			"    \"acct\"<blob>=\"fixture-octo\"\n    \"srvr\"<blob>=\"host.example\"\n    \"ptcl\"<blob>=\"htps\"\n" +
+			"    \"port\"<uint32>=" + port + "\n" +
+			"access: 1 entries\n    entry 0:\n        authorizations (1): decrypt\n        don't-require-password\n" +
+			"        description: host.example\n        applications: <null>\n"
+	}
+	dump := item("0x000001BB ") + item("0x00001F90 ")
+	fx := keychainFixture(t, &dump)
+	s, _ := fx.runJSON(newKeychainCollectors(Options{}, "unknown"))
+	if len(s.Findings) != 2 || s.Findings[0].SlotID == s.Findings[1].SlotID || len(s.Items) != 2 {
+		t.Errorf("findings %d, items %d; want two slots and two items", len(s.Findings), len(s.Items))
 	}
 }

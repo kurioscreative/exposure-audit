@@ -129,7 +129,7 @@ func (h helperConfig) enrich(it *kcItem, v kcVerdict, f *Finding) {
 		setClass(Propagation)
 	case h.dockerKeychain && it.attrs["labl"] == "Docker Credentials" && viaDocker:
 		name := filepath.Base(dockerTool)
-		f.Title = "Docker registry credentials, usable by any process through " + name
+		f.Title = "Docker registry credentials, usable by any process through a docker-credential helper"
 		f.LiveTitle = "Docker registry credentials for " + it.attrs["srvr"] + ", usable by any process through " + name
 		f.Fix = fixText["docker"]
 		setClass(Service)

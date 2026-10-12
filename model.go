@@ -71,6 +71,7 @@ type Finding struct {
 	// name Keychain services or accounts (decision 16). Never serialized.
 	LiveTitle    string `json:"-"`
 	LiveLocation string `json:"-"`
+	LiveDetail   string `json:"-"` // Detail naming things parsed from the Keychain dump (A-53)
 }
 
 func (f *Finding) DisplayTitle() string {
@@ -78,6 +79,13 @@ func (f *Finding) DisplayTitle() string {
 		return f.LiveTitle
 	}
 	return f.Title
+}
+
+func (f *Finding) DisplayDetail() string {
+	if f.LiveDetail != "" {
+		return f.LiveDetail
+	}
+	return f.Detail
 }
 
 func (f *Finding) DisplayLocation() string {
