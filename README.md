@@ -10,7 +10,7 @@ The reference threat is the [Shai-Hulud npm worm](https://www.sysdig.com/blog/re
 
 ## Screenshots
 
-> These were rendered from the test harness's fake home (`baseFixture`), with fabricated tokens and the committed, sanitized Keychain sample. No real machine was scanned.
+> These were rendered from the test harness's fake home (`baseFixture`), with fabricated tokens and the committed, sanitized Keychain sample. No real machine was scanned. Regenerate them with [`docs/screenshots.sh`](docs/screenshots.sh).
 
 The score, the changes since your last run, and the ranked "Fix these first" list:
 
@@ -131,7 +131,8 @@ These are enforced by tests (see [`invariants_test.go`](invariants_test.go) and 
 ## Development
 
 ```sh
-./test.sh   # gofmt, go vet, Linux and darwin/arm64 builds, tests
+./test.sh              # gofmt, go vet, Linux and darwin/arm64 builds, tests
+docs/screenshots.sh    # regenerate the README screenshots (macOS, Google Chrome)
 ```
 
 Tests run the whole tool in-process against a temporary fake home, with fake tokens built at runtime. Never point the tests or the binary at someone else's home directory. [`HANDOFF.md`](HANDOFF.md) has the design and decisions; [`REVIEW.md`](REVIEW.md) tracks review findings.
