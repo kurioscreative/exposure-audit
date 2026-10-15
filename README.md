@@ -10,7 +10,7 @@ The reference threat is the [Shai-Hulud npm worm](https://www.sysdig.com/blog/re
 
 ## Screenshots
 
-> These are rendered from the test suite's fake home directory and fabricated tokens, not from a real machine.
+> These were rendered from the test harness's fake home (`baseFixture`), with fabricated tokens and the committed, sanitized Keychain sample. No real machine was scanned.
 
 The score, the changes since your last run, and the ranked "Fix these first" list:
 
@@ -107,7 +107,7 @@ Exit codes: `0` complete run; `1` report produced but a collector failed, timed 
 
 ## Safety guarantees
 
-These are enforced by tests (see [`invariants_test.go`](invariants_test.go)):
+These are enforced by tests (see [`invariants_test.go`](invariants_test.go) and [`keychain_test.go`](keychain_test.go)):
 
 - **No secret values on screen or at rest.** Values are read into memory, fingerprinted with a salted HMAC, and dropped. Every output is checked for leaks before anything is written. If a secret shows up, the output is withheld.
 - **No network.** The binary does not link `net` or `net/http`, and does not read cloud-storage placeholder files that would download on access.
