@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -120,5 +122,22 @@ func TestSummaryPreventionAndNotes(t *testing.T) {
 	empty := newFixture(t)
 	if r := empty.runApp([]Collector{}); !strings.Contains(r.stdout, "Prevention: not checked") {
 		t.Errorf("summary without prevention data:\n%s", r.stdout)
+	}
+}
+
+// An item's locations display in path order. Finding IDs hash the secret's
+// fingerprint, so ordering by ID reshuffled them whenever a secret rotated.
+func TestItemLocationsDisplayInPathOrder(t *testing.T) {
+	for i := range 20 {
+		fp := fmt.Sprintf("gh%d", i) // each fingerprint stands for one rotation
+		s := &Snapshot{Findings: []Finding{
+			fin(fnd("gh-token", "~/.zsh_history", Propagation, fp)),
+			fin(fnd("gh-token", "~/.config/gh/hosts.yml", Propagation, fp)),
+		}}
+		_, s.Items, _ = score(s.Findings)
+		got := displayItems(s, 1)[0].Locations
+		if want := []string{"~/.config/gh/hosts.yml", "~/.zsh_history"}; !slices.Equal(got, want) {
+			t.Fatalf("fingerprint %s: locations %q, want %q", fp, got, want)
+		}
 	}
 }

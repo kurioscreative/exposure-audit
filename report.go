@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"html/template"
+	"slices"
 	"strings"
 )
 
@@ -58,6 +59,9 @@ func displayItems(s *Snapshot, limit int) []displayItem {
 					d.Locations = append(d.Locations, f.DisplayLocation())
 				}
 			}
+			// it.Findings is in ID order, and IDs hash the secret: sort so a
+			// rotation does not reshuffle the locations.
+			slices.Sort(d.Locations)
 		}
 		out = append(out, d)
 	}
