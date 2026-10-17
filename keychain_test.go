@@ -398,19 +398,61 @@ func TestKeychainToolPathsAreLiveOnly(t *testing.T) {
 	}
 }
 
-// Internet passwords that differ only by port are distinct slots (A-54).
-func TestKeychainInetPortsAreDistinctSlots(t *testing.T) {
-	item := func(port string) string {
-		return "keychain: \"/Users/x/Library/Keychains/login.keychain-db\"\nversion: 512\nclass: \"inet\"\nattributes:\n" +
-			"    \"acct\"<blob>=\"fixture-octo\"\n    \"srvr\"<blob>=\"host.example\"\n    \"ptcl\"<blob>=\"htps\"\n" +
-			"    \"port\"<uint32>=" + port + "\n" +
-			"access: 1 entries\n    entry 0:\n        authorizations (1): decrypt\n        don't-require-password\n" +
-			"        description: host.example\n        applications: <null>\n"
+// kcSilentItem is one silent Keychain item of class with the given attribute lines.
+func kcSilentItem(class string, attrs ...string) string {
+	return "keychain: \"/Users/x/Library/Keychains/login.keychain-db\"\nversion: 512\nclass: \"" + class + "\"\nattributes:\n    " +
+		strings.Join(attrs, "\n    ") + "\n" +
+		"access: 1 entries\n    entry 0:\n        authorizations (1): decrypt\n        don't-require-password\n" +
+		"        description: x\n        applications: <null>\n"
+}
+
+// Distinct Keychain items are distinct slots, findings and Fix-first items
+// (A-54: protocol, port, path; A-59: security domain, authentication type,
+// genp svce fallback, "|" inside a field).
+func TestKeychainDistinctItemsAreDistinctSlots(t *testing.T) {
+	inet := func(extra ...string) string {
+		return kcSilentItem("inet", append([]string{`"acct"<blob>="fixture-octo"`, `"srvr"<blob>="host.example"`, `"ptcl"<uint32>="htps"`}, extra...)...)
 	}
-	dump := item("0x000001BB ") + item("0x00001F90 ")
-	fx := keychainFixture(t, &dump)
-	s, _ := fx.runJSON(newKeychainCollectors(Options{}, "unknown"))
-	if len(s.Findings) != 2 || s.Findings[0].SlotID == s.Findings[1].SlotID || len(s.Items) != 2 {
-		t.Errorf("findings %d, items %d; want two slots and two items", len(s.Findings), len(s.Items))
+	cases := map[string]string{
+		"port": inet(`"port"<uint32>=0x000001BB `) + inet(`"port"<uint32>=0x00001F90 `),
+		// git's item plus `security add-internet-password -t form`, as dumped by security.
+		"atyp": inet(`"atyp"<blob>="dflt"`) + inet(`"atyp"<blob>="form"`),
+		"sdmn": inet(`"sdmn"<blob>=<NULL>`) + inet(`"sdmn"<blob>="CORP"`),
+		"svce fallback": kcSilentItem("genp", `0x00000007 <blob>="x"`, `"acct"<blob>="a"`) +
+			kcSilentItem("genp", `"svce"<blob>="x"`, `"acct"<blob>="a"`),
+		"pipe": kcSilentItem("genp", `"svce"<blob>="a|b"`, `"acct"<blob>="c"`) +
+			kcSilentItem("genp", `"svce"<blob>="a"`, `"acct"<blob>="b|c"`),
+	}
+	for name, dump := range cases {
+		fx := keychainFixture(t, &dump)
+		s, _ := fx.runJSON(newKeychainCollectors(Options{}, "unknown"))
+		if len(s.Findings) != 2 || s.Findings[0].SlotID == s.Findings[1].SlotID || s.Findings[0].ID == s.Findings[1].ID || len(s.Items) != 2 {
+			t.Errorf("%s: findings %d, items %d; want two slots, two IDs and two items", name, len(s.Findings), len(s.Items))
+		}
+	}
+}
+
+// A-59 leaves existing slots alone: items with svce or of class inet, default
+// atyp and sdmn, and no "|" keep the A-54 key, so users see no churn.
+func TestKeychainSlotKeyUnchangedForExistingItems(t *testing.T) {
+	dump := readTestdata(t, "keychain_variants.txt") + readTestdata(t, "keychain_section12.txt") +
+		kcSilentItem("inet", `"acct"<blob>="acc"`, `"atyp"<blob>="dflt"`, `"port"<uint32>=0x00000000 `,
+			`"ptcl"<uint32>="htps"`, `"sdmn"<blob>=<NULL>`, `"srvr"<blob>="host.example"`)
+	checked := 0
+	for _, it := range parseKeychainDump(dump) {
+		if it.class != "inet" && (it.class != "genp" || it.attrs["svce"] == "") {
+			continue
+		}
+		old := "kc|" + it.class + "|" + kcService(it) + "|" + it.attrs["acct"]
+		if it.class == "inet" {
+			old += "|" + it.attrs["srvr"] + "|" + it.attrs["ptcl"] + "|" + it.attrs["port"] + "|" + it.attrs["path"]
+		}
+		if got := kcSlotKey(it); got != old {
+			t.Errorf("slot key %q, want unchanged %q", got, old)
+		}
+		checked++
+	}
+	if checked < 5 {
+		t.Errorf("checked %d items", checked)
 	}
 }

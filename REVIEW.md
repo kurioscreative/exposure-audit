@@ -79,6 +79,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | 2026-10-12 | Keychain tool paths live-only; Keychain SlotID adds class, protocol, port and path              | [16](HANDOFF.md#2-decisions-already-made) | [A-53](#a-53), [A-54](#a-54) |
 | 2026-10-12 | Known-file class is a floor; a token format can raise it                                        | —                | [A-55](#a-55)       |
 | 2026-10-12 | Keep the full matcher on `.git/config`; Prevention reads per-user files only, no `XDG_CONFIG_HOME` | [19](HANDOFF.md#2-decisions-already-made) | [A-20](#a-20), [A-42](#a-42) |
+| 2026-10-17 | Keychain SlotID follows Apple's unique key: adds non-default `sdmn` and `atyp`, escapes fields       | —                | [A-59](#a-59)       |
 
 ## Findings from the document review
 
@@ -140,6 +141,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-54"></a>A-54 | Keychain `SlotID` is `HMAC(kc|service|account)` as specified, so unnamed items, and `inet` items differing only by protocol, port or path, share a slot | [verified] reading | [§5 Data model](HANDOFF.md#data-model) | built |
 | <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
 | <a id="a-61"></a>A-61 | The diff subtracted two float totals summed in map order, so an unchanged run could print `(-0.0 since ...)` and persist `"delta": -0` | [verified] test | — | built |
+| <a id="a-59"></a>A-59 | Keychain `SlotID` omits inet `sdmn` and `atyp`, and the svce→srvr→labl fallback plus unescaped "\|" let distinct genp items share a slot, so distinct items merge into one Fix-first item, deleting one drops the score with no change line, and an added `sdmn` item reads as rotated | [verified] test | [§5 Data model](HANDOFF.md#data-model) | built |
 
 ## Findings from the real run (2026-10-12)
 
