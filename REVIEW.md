@@ -139,6 +139,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-53"></a>A-53 | Persisted Keychain `Detail` names the trusted command-line tool paths, and the Docker title the `docker-credential-*` name, both parsed from the dump | [verified] reading | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-54"></a>A-54 | Keychain `SlotID` is `HMAC(kc|service|account)` as specified, so unnamed items, and `inet` items differing only by protocol, port or path, share a slot | [verified] reading | [§5 Data model](HANDOFF.md#data-model) | built |
 | <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
+| <a id="a-61"></a>A-61 | The diff subtracted two float totals summed in map order, so an unchanged run could print `(-0.0 since ...)` and persist `"delta": -0` | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 

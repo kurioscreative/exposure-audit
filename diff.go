@@ -75,7 +75,9 @@ func diffSnapshots(prev, cur *Snapshot) *Diff {
 			d.add(Resolved, f)
 		}
 	}
-	d.Delta = round1(comparableTotal(cur.Findings, unknown) - comparableTotal(prev.Findings, unknown))
+	// Round each total first: they are float sums in map order, and an
+	// unchanged run must give 0, not -0.0.
+	d.Delta = round1(round1(comparableTotal(cur.Findings, unknown)) - round1(comparableTotal(prev.Findings, unknown)))
 	if prev.FullDiskAccess != cur.FullDiskAccess {
 		d.FDABefore, d.FDANow = prev.FullDiskAccess, cur.FullDiskAccess
 	}

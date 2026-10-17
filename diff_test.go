@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 	"time"
@@ -206,6 +207,26 @@ func TestKeychainNamesOnlyInLiveOutput(t *testing.T) {
 	for _, out := range append(fx.historyFiles(), r.stdout) {
 		if strings.Contains(out, "gh:github.com") || strings.Contains(out, "octo-account") {
 			t.Error("Keychain service or account name persisted (decision 16)")
+		}
+	}
+}
+
+// comparableTotal sums floats in map order, so an unchanged run could print
+// "-0.0" when the two sums differ in the last bit.
+func TestDiffUnchangedDeltaIsPositiveZero(t *testing.T) {
+	var fs []Finding
+	for i := range 12 {
+		f := fnd("aws-session", fmt.Sprintf("~/.aws/cli/cache/%d.json", i), Cloud, fmt.Sprint("s", i))
+		f.Lifetime, f.Collector = Session, "aws"
+		if i%3 == 0 {
+			f.Gate = Windowed
+		}
+		fs = append(fs, fin(f))
+	}
+	snap := &Snapshot{Collectors: map[string]Status{"aws": Complete}, Findings: fs}
+	for range 100 {
+		if d := diffSnapshots(snap, snap); d.Delta != 0 || math.Signbit(d.Delta) {
+			t.Fatalf("delta %v", d.Delta)
 		}
 	}
 }
