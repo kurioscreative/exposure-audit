@@ -310,3 +310,22 @@ func TestRootsAreAbsolute(t *testing.T) {
 		t.Errorf("protected root: exit 2, stderr %q; want it skipped unchecked", r.stderr)
 	}
 }
+
+// Nested roots, the way to reach past -max-depth, report each file once and
+// keep the deeper root's reach (A-60).
+func TestNestedRootsReportEachFileOnce(t *testing.T) {
+	fx := newFixture(t)
+	fx.write("a/.env", "STRIPE_KEY="+fx.secret("sk_live_", 24)+"\n")
+	fx.write("a/b/.env", "STRIPE_KEY="+fx.secret("sk_live_", 24)+"\n")
+	fx.write("a/b/c/d/.env", "STRIPE_KEY="+fx.secret("sk_live_", 24)+"\n")
+	roots := []string{fx.home, filepath.Join(fx.home, "a/b"), fx.home}
+	s, _ := fx.runAmbient(newAmbientCollectors(Options{Roots: roots, MaxDepth: 2}, "unknown")[2:])
+	var got []string
+	for _, f := range s.Findings {
+		got = append(got, f.Location)
+	}
+	want := []string{"~/a/.env", "~/a/b/.env", "~/a/b/c/d/.env"}
+	if !slices.Equal(got, want) {
+		t.Errorf("findings %v, want %v", got, want)
+	}
+}

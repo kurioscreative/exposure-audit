@@ -229,8 +229,14 @@ func (c *dotenvCollector) Collect(ctx context.Context, env *Env) ([]Finding, err
 	repos := gitRepos{env: env}
 	seenDirs := map[string]bool{}
 	seenConfigs := map[string]bool{}
+	seenFiles := map[string]bool{} // nested or repeated roots reach a file twice (A-60)
 
 	err := env.walk(ctx, c.roots, walkOpts{maxDepth: c.maxDepth, allowProtect: c.allowProtect}, func(dir string, d fs.DirEntry) {
+		name, p := d.Name(), filepath.Join(dir, d.Name())
+		if seenFiles[p] {
+			return
+		}
+		seenFiles[p] = true
 		if !seenDirs[dir] {
 			// The walk never enters .git, so look at a repository's config
 			// from its working directory (A-20). A repository root with no
@@ -240,7 +246,6 @@ func (c *dotenvCollector) Collect(ctx context.Context, env *Env) ([]Finding, err
 				out = append(out, f)
 			}
 		}
-		name, p := d.Name(), filepath.Join(dir, d.Name())
 		atHome := dir == env.Home
 		switch {
 		case dotenvRx.MatchString(name) && !dotenvSafeRx.MatchString(name):

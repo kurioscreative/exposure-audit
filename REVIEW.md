@@ -148,6 +148,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-62"></a>A-62 | The report's Changes list showed persisted `Change.Title` and `Location`, so a Keychain change read "login keychain item" plus a slot hash that appears nowhere else on the page | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-57"></a>A-57 | `-roots` elements were only cleaned, never made absolute: `-roots .` from home (or a trailing comma) swept Desktop, Documents and Downloads without `-probe-folders`, retitled `~/.env` and `~/.npmrc` as project files and corrupted the next diff; `~` after a comma stayed literal; a root symlinked into a protected folder was walked | [verified] test | [§2 d17](HANDOFF.md#2-decisions-already-made) | built |
+| <a id="a-60"></a>A-60 | Nested or repeated sweep roots emitted identical findings (same ID and SlotID) for every `.env`, project `.npmrc`/`.yarnrc.yml` and Rails key in the overlap, doubling the summary count and the diff's "new" | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 
