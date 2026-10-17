@@ -173,5 +173,14 @@ func decodeSnapshot(t *testing.T, s string) Snapshot {
 	if err := json.Unmarshal([]byte(s), &snap); err != nil {
 		t.Fatalf("decode snapshot: %v", err)
 	}
+	// Two findings with one ID are two things the diff and Fix first cannot
+	// tell apart (A-59, A-60).
+	ids := map[string]bool{}
+	for _, f := range snap.Findings {
+		if ids[f.ID] {
+			t.Errorf("duplicate finding ID %s at %s", f.ID, f.Location)
+		}
+		ids[f.ID] = true
+	}
 	return snap
 }
