@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"maps"
 	"math"
 	"slices"
 	"strings"
@@ -148,21 +149,25 @@ func makeItem(g []*credAgg) Item {
 			}
 		}
 	}
+	// Path order, not ID order: IDs hash fingerprints and change on rotation (A-64).
 	var best *Finding
-	for f, w := range fws {
+	for _, f := range slices.SortedFunc(maps.Keys(fws), compareFindings) {
 		it.Locations = append(it.Locations, f.Location)
 		it.Findings = append(it.Findings, f.ID)
-		if best == nil || cmp.Or(cmp.Compare(fws[best], w), cmp.Compare(f.Location, best.Location), cmp.Compare(f.ID, best.ID)) < 0 {
+		if best == nil || fws[f] > fws[best] {
 			best = f
 		}
 	}
 	it.Title, it.Fix, it.titleFrom = best.Title, best.Fix, best.ID
 	it.Score = round1(it.Score)
 	slices.Sort(it.Credentials)
-	slices.Sort(it.Locations)
 	it.Locations = slices.Compact(it.Locations)
-	slices.Sort(it.Findings)
 	return it
+}
+
+// compareFindings is sortFindings' order: location, kind, then ID.
+func compareFindings(a, b *Finding) int {
+	return cmp.Or(cmp.Compare(a.Location, b.Location), cmp.Compare(a.Kind, b.Kind), cmp.Compare(a.ID, b.ID))
 }
 
 // sortItems orders by tier, then score descending, then location (decision 8).

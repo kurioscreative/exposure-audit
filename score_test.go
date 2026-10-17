@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 )
@@ -171,5 +172,24 @@ func TestRankingTierBeatsScore(t *testing.T) {
 	_, items, _ := score([]Finding{fin(envf), fin(fnd("npm-token", "~/.npmrc", Propagation, "npm"))})
 	if items[0].Locations[0] != "~/.npmrc" || items[1].Score != 32 {
 		t.Errorf("items %+v; want npm (tier 1) above the 32.0 .env (R-01)", items)
+	}
+}
+
+// An item's findings, and the finding its title comes from, follow path
+// order: IDs hash fingerprints, so ID order changed whenever a secret rotated (A-64).
+func TestItemFindingsInPathOrder(t *testing.T) {
+	for i := range 30 {
+		fp := fmt.Sprintf("ak%d", i) // each fingerprint stands for one rotation
+		b := fin(fnd("b-kind", "~/.aws/credentials", Cloud, fp))
+		a := fin(fnd("a-kind", "~/.aws/credentials", Cloud, fp))
+		z := fin(fnd("history", "~/.zsh_history", Cloud, fp))
+		_, items, _ := score([]Finding{z, b, a})
+		it := items[0]
+		if want := []string{a.ID, b.ID, z.ID}; !slices.Equal(it.Findings, want) {
+			t.Fatalf("fingerprint %s: findings %v, want %v", fp, it.Findings, want)
+		}
+		if it.Title != "a-kind" || it.Fix != "fix a-kind" {
+			t.Fatalf("fingerprint %s: title %q fix %q, want the first tied finding in path order", fp, it.Title, it.Fix)
+		}
 	}
 }

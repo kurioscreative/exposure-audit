@@ -142,6 +142,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
 | <a id="a-61"></a>A-61 | The diff subtracted two float totals summed in map order, so an unchanged run could print `(-0.0 since ...)` and persist `"delta": -0` | [verified] test | — | built |
 | <a id="a-59"></a>A-59 | Keychain `SlotID` omits inet `sdmn` and `atyp`, and the svce→srvr→labl fallback plus unescaped "\|" let distinct genp items share a slot, so distinct items merge into one Fix-first item, deleting one drops the score with no change line, and an added `sdmn` item reads as rotated | [verified] test | [§5 Data model](HANDOFF.md#data-model) | built |
+| <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 
