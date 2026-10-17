@@ -384,35 +384,23 @@ func keychainFinding(env *Env, it *kcItem, v kcVerdict) Finding {
 	}
 }
 
-// kcSlotKey identifies one Keychain item across runs. HANDOFF §5 specifies
-// kc|service|account; A-54 widens it with the item class and, for internet
-// passwords, protocol, port and path, because items with no name, and inet
-// items differing only in those, otherwise share a slot and the diff and
-// Fix-first grouping merge unrelated items. A-59 completes Apple's unique
-// keys: inet adds security domain and authentication type when not the
-// default, and a genp item without svce marks its fallback name so it cannot
-// match an item whose svce is that name. Fields are escaped so a "|" inside
-// one cannot shift the rest. An existing slot changes only for a genp item
-// without svce or a field containing "|" or "\". mdat stays out: a changed
-// mdat must keep the slot so it reads as a rotation.
+// kcSlotKey identifies one Keychain item across runs by Apple's unique key
+// for its class (A-54, A-59), so two items the Keychain can hold side by side
+// never share a slot, and a renamed label keeps it. Fields are escaped so a
+// "|" inside one cannot shift the rest. mdat stays out: a changed mdat must
+// keep the slot so it reads as a rotation.
 func kcSlotKey(it *kcItem) string {
-	svc := kcEsc.Replace(kcService(it))
-	if it.class == "genp" && it.attrs["svce"] == "" {
-		svc = `\~` + svc // an escaped value never starts with \~
-	}
-	k := "kc|" + it.class + "|" + svc + "|" + kcEsc.Replace(it.attrs["acct"])
-	if it.class == "inet" {
-		for _, a := range []string{"srvr", "ptcl", "port", "path"} {
-			k += "|" + kcEsc.Replace(it.attrs[a])
-		}
-		if v := it.attrs["sdmn"]; v != "" {
-			k += "|sdmn=" + kcEsc.Replace(v)
-		}
-		if v := it.attrs["atyp"]; v != "" && v != "dflt" {
-			k += "|atyp=" + kcEsc.Replace(v)
-		}
+	k := "kc|" + it.class
+	for _, a := range kcKeyAttrs[it.class] {
+		k += "|" + kcEsc.Replace(it.attrs[a])
 	}
 	return k
+}
+
+// kcKeyAttrs is each collected class's unique key (Apple's Security schema).
+var kcKeyAttrs = map[string][]string{
+	"genp": {"svce", "acct"},
+	"inet": {"acct", "sdmn", "srvr", "ptcl", "atyp", "port", "path"},
 }
 
 var kcEsc = strings.NewReplacer(`\`, `\\`, "|", `\|`)

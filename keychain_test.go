@@ -408,7 +408,7 @@ func kcSilentItem(class string, attrs ...string) string {
 
 // Distinct Keychain items are distinct slots, findings and Fix-first items
 // (A-54: protocol, port, path; A-59: security domain, authentication type,
-// genp svce fallback, "|" inside a field).
+// a genp label standing in for svce, "|" inside a field).
 func TestKeychainDistinctItemsAreDistinctSlots(t *testing.T) {
 	inet := func(extra ...string) string {
 		return kcSilentItem("inet", append([]string{`"acct"<blob>="fixture-octo"`, `"srvr"<blob>="host.example"`, `"ptcl"<uint32>="htps"`}, extra...)...)
@@ -432,27 +432,11 @@ func TestKeychainDistinctItemsAreDistinctSlots(t *testing.T) {
 	}
 }
 
-// A-59 leaves existing slots alone: items with svce or of class inet, default
-// atyp and sdmn, and no "|" keep the A-54 key, so users see no churn.
-func TestKeychainSlotKeyUnchangedForExistingItems(t *testing.T) {
-	dump := readTestdata(t, "keychain_variants.txt") + readTestdata(t, "keychain_section12.txt") +
-		kcSilentItem("inet", `"acct"<blob>="acc"`, `"atyp"<blob>="dflt"`, `"port"<uint32>=0x00000000 `,
-			`"ptcl"<uint32>="htps"`, `"sdmn"<blob>=<NULL>`, `"srvr"<blob>="host.example"`)
-	checked := 0
-	for _, it := range parseKeychainDump(dump) {
-		if it.class != "inet" && (it.class != "genp" || it.attrs["svce"] == "") {
-			continue
-		}
-		old := "kc|" + it.class + "|" + kcService(it) + "|" + it.attrs["acct"]
-		if it.class == "inet" {
-			old += "|" + it.attrs["srvr"] + "|" + it.attrs["ptcl"] + "|" + it.attrs["port"] + "|" + it.attrs["path"]
-		}
-		if got := kcSlotKey(it); got != old {
-			t.Errorf("slot key %q, want unchanged %q", got, old)
-		}
-		checked++
-	}
-	if checked < 5 {
-		t.Errorf("checked %d items", checked)
+// A genp item's label is not part of its unique key: renaming it keeps the slot.
+func TestKeychainLabelRenameKeepsSlot(t *testing.T) {
+	a := parseKeychainDump(kcSilentItem("genp", `0x00000007 <blob>="old"`, `"acct"<blob>="a"`))
+	b := parseKeychainDump(kcSilentItem("genp", `0x00000007 <blob>="new"`, `"acct"<blob>="a"`))
+	if kcSlotKey(a[0]) != kcSlotKey(b[0]) {
+		t.Errorf("slot key %q became %q", kcSlotKey(a[0]), kcSlotKey(b[0]))
 	}
 }

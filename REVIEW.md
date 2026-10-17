@@ -79,7 +79,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | 2026-10-12 | Keychain tool paths live-only; Keychain SlotID adds class, protocol, port and path              | [16](HANDOFF.md#2-decisions-already-made) | [A-53](#a-53), [A-54](#a-54) |
 | 2026-10-12 | Known-file class is a floor; a token format can raise it                                        | —                | [A-55](#a-55)       |
 | 2026-10-12 | Keep the full matcher on `.git/config`; Prevention reads per-user files only, no `XDG_CONFIG_HOME` | [19](HANDOFF.md#2-decisions-already-made) | [A-20](#a-20), [A-42](#a-42) |
-| 2026-10-17 | Keychain SlotID follows Apple's unique key: adds non-default `sdmn` and `atyp`, escapes fields       | —                | [A-59](#a-59)       |
+| 2026-10-17 | Keychain SlotID is Apple's unique key per class (genp svce, acct; inet adds sdmn, atyp); no backward compatibility for slots | —                | [A-59](#a-59)       |
 | 2026-10-17 | `-roots`: `~` expands; a root that is not an existing directory is a usage error (exit 2)          | [17](HANDOFF.md#2-decisions-already-made), [18](HANDOFF.md#2-decisions-already-made) | [A-57](#a-57)       |
 | 2026-10-17 | No separate Title/Fix tie-break hardening: the Keychain slot fix and a unique-ID test guard close it | —                | [A-59](#a-59), [A-64](#a-64) |
 
