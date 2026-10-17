@@ -193,3 +193,20 @@ func TestItemFindingsInPathOrder(t *testing.T) {
 		}
 	}
 }
+
+// Items tied on tier, score and first location keep one order across runs (A-56).
+func TestTiedItemsStableOrder(t *testing.T) {
+	fs := []Finding{
+		fin(fnd("aws-static", "~/.aws/credentials", Cloud, "ak1", "ak2")),
+		fin(fnd("history", "~/.zsh_history", Cloud, "ak2")),
+	}
+	_, first, _ := score(fs)
+	if len(first) != 2 || first[0].Score != first[1].Score || first[0].Locations[0] != first[1].Locations[0] {
+		t.Fatalf("want two tied items, got %+v", first)
+	}
+	for range 40 {
+		if _, items, _ := score(fs); !slices.EqualFunc(items, first, func(a, b Item) bool { return slices.Equal(a.Credentials, b.Credentials) }) {
+			t.Fatalf("order changed between identical runs: %+v then %+v", first, items)
+		}
+	}
+}

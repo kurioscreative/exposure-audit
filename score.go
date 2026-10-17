@@ -127,8 +127,8 @@ func score(findings []Finding) (creds []Credential, items []Item, total float64)
 		creds = append(creds, Credential{fp, c.class, round1(c.score), c.tier(), ids})
 		groups[c.slotKey()] = append(groups[c.slotKey()], c)
 	}
-	for _, g := range groups {
-		items = append(items, makeItem(g))
+	for _, k := range sortedKeys(groups) { // map order would break sortItems ties at random (A-56)
+		items = append(items, makeItem(groups[k]))
 	}
 	sortItems(items)
 	return creds, items, round1(total)
