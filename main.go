@@ -26,6 +26,7 @@ type Options struct {
 	Roots        []string
 	MaxDepth     int
 	Sanitize     bool // -sanitize-keychain-sample
+	Version      bool
 }
 
 // App is the whole tool, runnable in-process so tests never exec the binary
@@ -59,13 +60,15 @@ func (a *App) parseFlags(args []string) (Options, error) {
 	fs.BoolVar(&o.SkipKeychain, "skip-keychain", false, "skip the login keychain access-list check")
 	fs.StringVar(&roots, "roots", "", "comma-separated directories for the .env sweep (default: home)")
 	fs.IntVar(&o.MaxDepth, "max-depth", 5, "depth limit for the .env sweep")
-	fs.BoolVar(&o.Sanitize, "sanitize-keychain-sample", false, "print a sanitized login keychain dump for testdata/, then exit")
+	fs.BoolVar(&o.Version, "version", false, "print the version and exit")
+	fs.BoolVar(&o.Sanitize, devFlag, false, "print a sanitized login keychain dump for testdata/, then exit")
+	fs.Usage = func() { usage(a.Stderr, fs) }
 	if err := fs.Parse(args); err != nil {
 		return o, err
 	}
 	if fs.NArg() > 0 || o.MaxDepth < 0 {
 		fs.Usage()
-		return o, flag.ErrHelp
+		return o, errors.New("bad arguments")
 	}
 	// Roots are absolute: the sweep's protected-folder and home-level checks
 	// compare absolute paths (A-57). The shell leaves "~" after a comma alone.
@@ -97,6 +100,37 @@ func (a *App) parseFlags(args []string) (Options, error) {
 	return o, nil
 }
 
+// devFlag is for refreshing testdata/, so the help leaves it out.
+const devFlag = "sanitize-keychain-sample"
+
+func usage(w io.Writer, fs *flag.FlagSet) {
+	fmt.Fprint(w, `exposure-audit finds the credentials an install script started from this
+terminal could quietly read, and ranks what to fix first. It works offline,
+never prints a secret, and writes only to ~/.exposure-audit.
+
+Usage:
+  exposure-audit           terminal summary
+  exposure-audit -open     also open the full HTML report
+  exposure-audit -json     print the snapshot as JSON
+
+Flags:
+`)
+	fs.VisitAll(func(f *flag.Flag) {
+		if f.Name == devFlag {
+			return
+		}
+		line := "  -" + f.Name
+		typ, text := flag.UnquoteUsage(f)
+		if typ != "" {
+			line += " " + typ
+		}
+		if f.DefValue != "" && f.DefValue != "false" {
+			text += fmt.Sprintf(" (default %s)", f.DefValue)
+		}
+		fmt.Fprintf(w, "%s\n    \t%s\n", line, text)
+	})
+}
+
 // Main runs the tool and returns the exit code (decision 18): 0 complete;
 // 1 report produced but a collector failed, timed out or was partial, or an
 // output was withheld by the leak check; 2 usage error or unusable state.
@@ -104,8 +138,14 @@ func (a *App) Main(args []string) int {
 	// Before parseFlags: its protected-folder check needs the resolved home.
 	a.Env.realHome, _ = filepath.EvalSymlinks(a.Env.Home)
 	opts, err := a.parseFlags(args)
-	if err != nil {
+	if errors.Is(err, flag.ErrHelp) {
+		return 0
+	} else if err != nil {
 		return 2
+	}
+	if opts.Version {
+		fmt.Fprintf(a.Stdout, "exposure-audit %s\n", version)
+		return 0
 	}
 	if opts.Sanitize {
 		return a.sanitizeKeychainSample()
