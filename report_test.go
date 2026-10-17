@@ -173,3 +173,23 @@ func TestReportFindingsInDisplayOrder(t *testing.T) {
 		t.Error("view sort reordered the snapshot")
 	}
 }
+
+// Changes for current findings show live text; resolved ones keep history's (A-62).
+func TestReportChangesShowLiveText(t *testing.T) {
+	kc := fin(fnd("keychain-silent", "login keychain item 00", Propagation, "kc"))
+	kc.LiveTitle, kc.LiveLocation = "gh token", "login keychain: gh:github.com"
+	s := &Snapshot{Findings: []Finding{kc}, Diff: &Diff{Changes: []Change{
+		{New, kc.ID, kc.Title, kc.Location},
+		{Resolved, "gone", "npm auth token", "~/.npmrc"},
+	}}}
+	v := buildReportView(s)
+	if got := v.Changes[0].List[0]; got.Title != "gh token" || got.Location != "login keychain: gh:github.com" {
+		t.Errorf("new change %+v, want live text", got)
+	}
+	if got := v.Changes[1].List[0]; got.Title != "npm auth token" || got.Location != "~/.npmrc" {
+		t.Errorf("resolved change %+v, want persisted text", got)
+	}
+	if s.Diff.Changes[0].Location != "login keychain item 00" {
+		t.Error("view changed the persisted diff")
+	}
+}

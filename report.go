@@ -228,9 +228,15 @@ func buildReportView(s *Snapshot) reportView {
 			v.DeltaClass = "up"
 		}
 		v.Since = d.Previous.Format("2006-01-02 15:04 UTC")
+		byID := findingsByID(s)
 		for _, st := range []ChangeState{New, Resolved, Rotated, Unknown} {
 			var list []Change
 			for _, c := range d.Changes {
+				// A change to a current finding shows its live text, as Fix first
+				// does; resolved findings only have history's (A-62).
+				if f := byID[c.ID]; f != nil {
+					c.Title, c.Location = f.DisplayTitle(), f.DisplayLocation()
+				}
 				if c.State == st {
 					list = append(list, c)
 				}
