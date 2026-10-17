@@ -141,3 +141,53 @@ func TestPreventionNothingConfigured(t *testing.T) {
 		}
 	}
 }
+
+// dangerouslyAllowAllBuilds defaults to false, the safe value, so only an
+// explicit true earns a row.
+func TestPreventionPnpmAllowAllBuildsOnlyWhenTrue(t *testing.T) {
+	for config, want := range map[string]string{
+		"":                                   "missing",
+		"dangerouslyAllowAllBuilds: false\n": "missing",
+		"dangerouslyAllowAllBuilds: true\n":  stateOff,
+	} {
+		fx := newFixture(t)
+		fx.goos = "darwin"
+		fx.write("Library/Preferences/pnpm/config.yaml", config)
+		s, _ := fx.runJSON([]Collector{&preventionCollector{}})
+		if got := preventionState(s, "pnpm", "dangerouslyAllowAllBuilds"); got != want {
+			t.Errorf("config %q: state %q, want %q", config, got, want)
+		}
+	}
+}
+
+// Newer pnpm and Yarn default to the protective value, so an absent key's
+// fix says so; an explicit off keeps the plain fix.
+func TestPreventionFixMentionsNewerDefaults(t *testing.T) {
+	fixFor := func(s Snapshot, tool, setting string) string {
+		for _, r := range s.Prevention {
+			if r.Tool == tool && r.Setting == setting {
+				return r.Fix
+			}
+		}
+		return ""
+	}
+	fx := newFixture(t)
+	s, _ := fx.runJSON([]Collector{&preventionCollector{}})
+	if f := fixFor(s, "pnpm", "minimumReleaseAge"); !strings.Contains(f, "pnpm 11+ already waits 1 day") {
+		t.Errorf("pnpm absent fix %q", f)
+	}
+	if f := fixFor(s, "Yarn", "enableScripts"); !strings.Contains(f, "by default") {
+		t.Errorf("Yarn absent fix %q", f)
+	}
+
+	fx = newFixture(t)
+	fx.write(".config/pnpm/config.yaml", "minimumReleaseAge: 0\n")
+	fx.write(".yarnrc.yml", "enableScripts: true\n")
+	s, _ = fx.runJSON([]Collector{&preventionCollector{}})
+	if f := fixFor(s, "pnpm", "minimumReleaseAge"); f == "" || strings.Contains(f, "already") {
+		t.Errorf("pnpm off fix %q", f)
+	}
+	if f := fixFor(s, "Yarn", "enableScripts"); f == "" || strings.Contains(f, "by default") {
+		t.Errorf("Yarn off fix %q", f)
+	}
+}

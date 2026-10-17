@@ -69,9 +69,13 @@ func npmRows(env *Env) []PreventionRow {
 // missing key is reported as not configured rather than on.
 func yarnRows(env *Env) []PreventionRow {
 	kv := parseYAMLTop(readConfig(env, ".yarnrc.yml"))
+	scripts := boolState(kv, "enableScripts", false)
+	fix := "Add enableScripts: false to ~/.yarnrc.yml and allow builds per package with dependenciesMeta."
+	if scripts == stateNotConfigured {
+		fix = "Current Yarn blocks install scripts by default; add enableScripts: false to ~/.yarnrc.yml to be sure on older versions, and allow builds per package with dependenciesMeta."
+	}
 	return []PreventionRow{
-		row("Yarn", "enableScripts", boolState(kv, "enableScripts", false),
-			"Add enableScripts: false to ~/.yarnrc.yml and allow builds per package with dependenciesMeta."),
+		row("Yarn", "enableScripts", scripts, fix),
 		row("Yarn", "npmMinimalAgeGate", ageState(kv, "npmMinimalAgeGate"),
 			"Add npmMinimalAgeGate: 3d to ~/.yarnrc.yml so new versions wait before Yarn installs them."),
 	}
@@ -83,9 +87,11 @@ func yarnRows(env *Env) []PreventionRow {
 // https://pnpm.io/configuring (macOS: ~/Library/Preferences/pnpm/config.yaml
 // and .../rc; elsewhere ~/.config/pnpm/).
 // https://pnpm.io/settings/build (ignoreScripts default false;
-// dangerouslyAllowAllBuilds default false; onlyBuiltDependencies was removed
-// in v11 and replaced by allowBuilds, and unlisted packages' build scripts
-// are disallowed by default, so it is not reported).
+// dangerouslyAllowAllBuilds default false, so a row appears only when it is
+// set true, as "off": absent or false is the safe default, not a gap;
+// onlyBuiltDependencies was removed in v11 and replaced by allowBuilds, and
+// unlisted packages' build scripts are disallowed by default, so it is not
+// reported).
 // https://pnpm.io/settings/dependency-resolution (minimumReleaseAge: minutes;
 // default 1440 since v11, 0 before, so "not configured" depends on version).
 func pnpmRows(env *Env) []PreventionRow {
@@ -100,14 +106,20 @@ func pnpmRows(env *Env) []PreventionRow {
 	alias(kv, "ignore-scripts", "ignoreScripts")
 	alias(kv, "dangerously-allow-all-builds", "dangerouslyAllowAllBuilds")
 	alias(kv, "minimum-release-age", "minimumReleaseAge")
-	return []PreventionRow{
+	age := ageState(kv, "minimumReleaseAge")
+	fix := "Set minimumReleaseAge (minutes, e.g. 4320) in pnpm's global config.yaml."
+	if age == stateNotConfigured {
+		fix = "pnpm 11+ already waits 1 day; set minimumReleaseAge (minutes, e.g. 4320) in pnpm's global config.yaml to be sure or to wait longer."
+	}
+	rows := []PreventionRow{
 		row("pnpm", "ignoreScripts", boolState(kv, "ignoreScripts", true),
 			"Set ignoreScripts: true in pnpm's global config.yaml, or rely on allowBuilds to approve build scripts per package."),
-		row("pnpm", "dangerouslyAllowAllBuilds", boolState(kv, "dangerouslyAllowAllBuilds", false),
-			"Remove dangerouslyAllowAllBuilds and approve build scripts per package with allowBuilds."),
-		row("pnpm", "minimumReleaseAge", ageState(kv, "minimumReleaseAge"),
-			"Set minimumReleaseAge (minutes, e.g. 4320) in pnpm's global config.yaml."),
 	}
+	if boolState(kv, "dangerouslyAllowAllBuilds", false) == stateOff {
+		rows = append(rows, row("pnpm", "dangerouslyAllowAllBuilds", stateOff,
+			"Remove dangerouslyAllowAllBuilds and approve build scripts per package with allowBuilds."))
+	}
+	return append(rows, row("pnpm", "minimumReleaseAge", age, fix))
 }
 
 // Bun reads a global $HOME/.bunfig.toml (or $XDG_CONFIG_HOME/.bunfig.toml,
