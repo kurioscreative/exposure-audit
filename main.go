@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -255,7 +254,5 @@ func defaultCollectors(opts Options, fda string) []Collector {
 
 // sortFindings gives findings a stable order regardless of collector timing.
 func sortFindings(fs []Finding) {
-	slices.SortFunc(fs, func(a, b Finding) int {
-		return cmp.Or(cmp.Compare(a.Location, b.Location), cmp.Compare(a.Kind, b.Kind), cmp.Compare(a.ID, b.ID))
-	})
+	slices.SortFunc(fs, func(a, b Finding) int { return compareFindings(&a, &b) })
 }

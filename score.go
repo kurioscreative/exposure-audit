@@ -165,7 +165,7 @@ func makeItem(g []*credAgg) Item {
 	return it
 }
 
-// compareFindings is sortFindings' order: location, kind, then ID.
+// compareFindings orders findings by location, kind, then ID.
 func compareFindings(a, b *Finding) int {
 	return cmp.Or(cmp.Compare(a.Location, b.Location), cmp.Compare(a.Kind, b.Kind), cmp.Compare(a.ID, b.ID))
 }
