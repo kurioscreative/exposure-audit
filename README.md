@@ -100,7 +100,7 @@ Run it from the terminal (or IDE terminal) you actually install packages from. D
 | `-json`          | Print the snapshot as JSON instead of the summary                              |
 | `-probe-folders` | Also measure TCC-protected folders such as Documents (may show a macOS prompt) |
 | `-skip-keychain` | Skip the login Keychain access-list check                                      |
-| `-roots a,b`     | Directories for the `.env` sweep (default: your home)                          |
+| `-roots a,b`     | Directories for the `.env` sweep (default: your home); `~` expands, a missing one exits 2 |
 | `-max-depth n`   | Depth limit for the `.env` sweep (default 5)                                   |
 
 Exit codes: `0` complete run; `1` report produced but a collector failed, timed out or was partial (or an output was withheld by the leak check); `2` usage error or unusable state directory.

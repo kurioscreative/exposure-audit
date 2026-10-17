@@ -298,7 +298,7 @@ exposure-audit -sanitize-keychain-sample
 
 - Default output is the terminal summary: score and delta, finding and credential counts, launching app and agent, Full Disk Access, the top 5 "Fix first" items, collector notes, and one Prevention line.
 - `-json` prints the snapshot (no Keychain names, decision 16).
-- `-roots` defaults to the home directory; `-max-depth` to 5.
+- `-roots` defaults to the home directory; `-max-depth` to 5. Each `-roots` element is made absolute from the current directory, a leading `~` expands to the home (the shell does not expand it after a comma), and empty elements are ignored. A root that is not an existing directory is a usage error (exit 2, decision 18); a root inside a protected folder is not checked, since looking could raise the prompt. A root that is, or resolves through a symlink into, a protected folder is skipped unless `-probe-folders` is set or Full Disk Access is inferred `yes` (decision 17). Nested or repeated roots report each file once, and a nested root still reaches past `-max-depth` from its own top ([A-57](REVIEW.md#a-57), [A-60](REVIEW.md#a-60)).
 - Exit codes per decision 18.
 
 ## 6. Enforcing the invariants

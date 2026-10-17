@@ -132,8 +132,8 @@ func (e *Env) walk(ctx context.Context, roots []string, o walkOpts, fn func(dir 
 		return nil
 	}
 	for _, r := range roots {
-		if isProtected(r) {
-			continue
+		if !o.allowProtect && e.resolvesIntoProtected(r) {
+			continue // the root itself may be a symlink into a protected folder
 		}
 		if err := visit(r, 0); err != nil {
 			return err

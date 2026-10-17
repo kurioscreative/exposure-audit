@@ -68,12 +68,32 @@ func (a *App) parseFlags(args []string) (Options, error) {
 		fs.Usage()
 		return o, flag.ErrHelp
 	}
-	o.Roots = []string{a.Env.Home}
-	if roots != "" {
-		o.Roots = strings.Split(roots, ",")
-		for i, r := range o.Roots {
-			o.Roots[i] = filepath.Clean(r) // "~/" must equal the home for the sweep's home-level skips
+	// Roots are absolute: the sweep's protected-folder and home-level checks
+	// compare absolute paths (A-57). The shell leaves "~" after a comma alone.
+	for _, r := range strings.Split(roots, ",") {
+		if r == "" {
+			continue
 		}
+		p := r
+		if p == "~" || strings.HasPrefix(p, "~/") {
+			p = a.Env.Home + p[1:]
+		}
+		p, err := filepath.Abs(p)
+		if err != nil {
+			return o, err
+		}
+		// A root in a protected folder is not stat'ed: the walk skips it, and
+		// looking inside could raise the prompt (decision 17).
+		if o.ProbeFolders || !a.Env.resolvesIntoProtected(p) {
+			if fi, err := os.Stat(p); err != nil || !fi.IsDir() {
+				fmt.Fprintf(a.Stderr, "exposure-audit: -roots: %s is not a directory\n", r)
+				return o, errors.New("bad -roots")
+			}
+		}
+		o.Roots = append(o.Roots, p)
+	}
+	if len(o.Roots) == 0 {
+		o.Roots = []string{a.Env.Home}
 	}
 	return o, nil
 }
@@ -82,6 +102,8 @@ func (a *App) parseFlags(args []string) (Options, error) {
 // 1 report produced but a collector failed, timed out or was partial, or an
 // output was withheld by the leak check; 2 usage error or unusable state.
 func (a *App) Main(args []string) int {
+	// Before parseFlags: its protected-folder check needs the resolved home.
+	a.Env.realHome, _ = filepath.EvalSymlinks(a.Env.Home)
 	opts, err := a.parseFlags(args)
 	if err != nil {
 		return 2
@@ -106,7 +128,6 @@ func (a *App) Main(args []string) int {
 	// Synchronous and before the collectors: the sweep depends on it.
 	fda := inferFullDiskAccess(a.Env)
 	a.Env.allowProtected = opts.ProbeFolders || fda == "yes"
-	a.Env.realHome, _ = filepath.EvalSymlinks(a.Env.Home)
 	collectors := a.Collectors
 	if collectors == nil {
 		collectors = defaultCollectors(opts, fda)

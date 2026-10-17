@@ -147,6 +147,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-58"></a>A-58 | Two findings in one item sharing a display location printed it twice in the summary and HTML report, while history listed it once | [verified] test | — | built |
 | <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-62"></a>A-62 | The report's Changes list showed persisted `Change.Title` and `Location`, so a Keychain change read "login keychain item" plus a slot hash that appears nowhere else on the page | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
+| <a id="a-57"></a>A-57 | `-roots` elements were only cleaned, never made absolute: `-roots .` from home (or a trailing comma) swept Desktop, Documents and Downloads without `-probe-folders`, retitled `~/.env` and `~/.npmrc` as project files and corrupted the next diff; `~` after a comma stayed literal; a root symlinked into a protected folder was walked | [verified] test | [§2 d17](HANDOFF.md#2-decisions-already-made) | built |
 
 ## Findings from the real run (2026-10-12)
 

@@ -15,6 +15,7 @@ func TestWalkIsSortedAndSkipsProtectedAndSkipDirs(t *testing.T) {
 		fx.write(p, "x")
 	}
 	env := fx.env()
+	env.realHome, _ = filepath.EvalSymlinks(fx.home) // as Main sets it
 	collect := func(o walkOpts, roots ...string) ([]string, error) {
 		var got []string
 		err := env.walk(context.Background(), roots, o, func(dir string, d fs.DirEntry) {
@@ -34,6 +35,18 @@ func TestWalkIsSortedAndSkipsProtectedAndSkipDirs(t *testing.T) {
 	got, _ = collect(walkOpts{maxDepth: 5}, filepath.Join(fx.home, "Documents", "app"))
 	if len(got) != 0 {
 		t.Errorf("a root inside a protected folder was walked: %v", got)
+	}
+	link := filepath.Join(fx.home, "link")
+	if err := os.Symlink(filepath.Join(fx.home, "Documents", "app"), link); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = collect(walkOpts{maxDepth: 5}, link)
+	if len(got) != 0 {
+		t.Errorf("a root symlinked into a protected folder was walked: %v", got)
+	}
+	got, _ = collect(walkOpts{maxDepth: 5, allowProtect: true}, link)
+	if len(got) != 1 {
+		t.Errorf("allowProtect did not walk the symlinked root: %v", got)
 	}
 	got, _ = collect(walkOpts{maxDepth: 2}, fx.home)
 	if slices.Contains(got, "~/a/b/c/d/.env") {

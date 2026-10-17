@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -265,5 +266,47 @@ func TestSweepProjectRegistryConfigsAndRailsKeys(t *testing.T) {
 		if got[k] != v {
 			t.Errorf("%s: %q, want %q", k, got[k], v)
 		}
+	}
+}
+
+// -roots elements are made absolute so the sweep's protected-folder and
+// home-level checks see the same paths as the default run (A-57).
+func TestRootsAreAbsolute(t *testing.T) {
+	fx := newFixture(t)
+	fx.write("Documents/app/.env", "STRIPE_KEY="+fx.secret("sk_live_", 24)+"\n")
+	fx.write(".npmrc", "//registry.npmjs.org/:_authToken="+fx.secret("npm_", 36)+"\n")
+	fx.write(".env", "OTHER_TOKEN="+fx.secret("", 24)+"\n")
+	fx.write("code/app/.env", "STRIPE_KEY="+fx.secret("sk_live_", 24)+"\n")
+	t.Chdir(fx.home)
+	locations := func(args ...string) []string {
+		t.Helper()
+		r := fx.runApp(nil, append([]string{"-json"}, args...)...)
+		fx.assertNoMarkers(r.stdout, r.stderr)
+		if r.stdout == "" {
+			t.Fatalf("%v: no output; exit %d, stderr %q", args, r.code, r.stderr)
+		}
+		var got []string
+		for _, f := range decodeSnapshot(t, r.stdout).Findings {
+			got = append(got, f.Kind+" "+f.Location)
+		}
+		return got
+	}
+	want := locations()
+	for _, args := range [][]string{{"-roots", "."}, {"-roots", "~"}, {"-roots", ",~/,"}} {
+		if got := locations(args...); !slices.Equal(got, want) {
+			t.Errorf("%v: %v, want %v", args, got, want)
+		}
+	}
+	code := locations("-roots", filepath.Join(fx.home, "code"))
+	if got := locations("-roots", "~/code"); !slices.Equal(got, code) {
+		t.Errorf("-roots ~/code: %v, want %v", got, code)
+	}
+	r := fx.runApp(nil, "-json", "-roots", "code,missing")
+	if r.code != 2 || r.stdout != "" || !strings.Contains(r.stderr, "missing is not a directory") {
+		t.Errorf("missing root: exit %d stdout %q stderr %q; want 2 and a message", r.code, r.stdout, r.stderr)
+	}
+	// Not stat'ed, even through a symlinked temp home: looking could raise the prompt.
+	if r := fx.runApp(nil, "-json", "-roots", "~/Documents/missing"); r.code == 2 {
+		t.Errorf("protected root: exit 2, stderr %q; want it skipped unchecked", r.stderr)
 	}
 }
