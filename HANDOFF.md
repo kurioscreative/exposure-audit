@@ -57,7 +57,7 @@ Decided 2026-10-12, after the review and a prototype run on Glenn's Mac:
 15. **The HTML report is written only with `-open`, and deleted afterwards** ([A-25](REVIEW.md#a-25)).
 16. **History never stores Keychain service or account names** ([A-27](REVIEW.md#a-27)).
 17. **The protected-folder probe is opt-in** (`-probe-folders`) ([A-28](REVIEW.md#a-28)).
-18. **Exit codes:** 0 = complete run; 1 = report produced but at least one collector failed, timed out, or was partial; 2 = usage error or unusable state directory ([A-31](REVIEW.md#a-31)).
+18. **Exit codes:** 0 = complete run; 1 = report produced but at least one collector failed, timed out, or was partial; 2 = usage error or unusable state directory ([A-31](REVIEW.md#a-31)). `-h` and `-version` are requests, not errors: they exit 0.
 19. **An unscored "Prevention" section** reports whether package managers run install scripts and whether release-age delays are set ([A-32](REVIEW.md#a-32)).
 20. **The content sweep (M6) is post-MVP** ([A-24](REVIEW.md#a-24)).
 21. **A passphrase-protected SSH key that no agent holds keeps the 0.1 gated multiplier.**
@@ -296,7 +296,7 @@ exposure-audit [-open] [-json] [-probe-folders] [-skip-keychain] [-roots dir,dir
 exposure-audit -sanitize-keychain-sample
 ```
 
-- Default output is the terminal summary: score and delta, finding and credential counts, launching app and agent, Full Disk Access, the top 5 "Fix first" items, collector notes, and one Prevention line.
+- Default output is the terminal summary: score and delta, finding and credential counts, launching app and agent, Full Disk Access, the top 5 "Fix first" items with a count of any left out, each change since the last run by name, collector notes, and one Prevention line that counts settings on and names the ones to fix.
 - `-json` prints the snapshot (no Keychain names, decision 16).
 - `-roots` defaults to the home directory; `-max-depth` to 5. Each `-roots` element is made absolute from the current directory, a leading `~` expands to the home (the shell does not expand it after a comma), and empty elements are ignored. A root that is not an existing directory is a usage error (exit 2, decision 18); a root inside a protected folder is not checked, since looking could raise the prompt. Accepted gap: parseFlags runs before Full Disk Access is inferred, so with Full Disk Access `yes` and no `-probe-folders`, a mistyped root inside a protected folder is walked, finds nothing, and the sweep reports complete. A root that is, or resolves through a symlink into, a protected folder is skipped unless `-probe-folders` is set or Full Disk Access is inferred `yes` (decision 17). Nested or repeated roots report each file once, and a nested root still reaches past `-max-depth` from its own top ([A-57](REVIEW.md#a-57), [A-60](REVIEW.md#a-60)).
 - Exit codes per decision 18.

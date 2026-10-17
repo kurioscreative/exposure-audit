@@ -134,6 +134,7 @@ Flags:
 // Main runs the tool and returns the exit code (decision 18): 0 complete;
 // 1 report produced but a collector failed, timed out or was partial, or an
 // output was withheld by the leak check; 2 usage error or unusable state.
+// -h and -version exit 0.
 func (a *App) Main(args []string) int {
 	// Before parseFlags: its protected-folder check needs the resolved home.
 	a.Env.realHome, _ = filepath.EvalSymlinks(a.Env.Home)
