@@ -23,7 +23,7 @@ What else the same process can read (not scored), whether your package managers 
 Running it with no flags prints a summary in the terminal:
 
 ```text
-Exposure score: 68.2  (-10.0 since 2026-10-12 09:30 UTC)
+Exposure score (lower is better): 68.2  (-10.0 since 2026-10-12 09:30 UTC)
 Findings: 11 · credentials: 11 · worm vectors usable without a prompt: 4
 Launched from: iTerm.app (-zsh < iTerm2)
 Full Disk Access: no
@@ -41,7 +41,9 @@ Fix first:
        Fix: Publish with npm trusted publishing (OIDC) so no token lives on disk; if you must keep one, make it granular, read-only, and short-lived. Set ignore-scripts=true.
   ...
 
-Changes since last run: 1 resolved, 1 rotated
+Changes since last run:
+  resolved: API keys in an AI tool or MCP config (~/.cursor/mcp.json)
+  rotated: npm auth token (~/.npmrc)
 ```
 
 ## What it checks
@@ -100,10 +102,11 @@ Run it from the terminal (or IDE terminal) you actually install packages from. D
 | `-json`          | Print the snapshot as JSON instead of the summary                              |
 | `-probe-folders` | Also measure TCC-protected folders such as Documents (may show a macOS prompt) |
 | `-skip-keychain` | Skip the login Keychain access-list check                                      |
+| `-version`       | Print the version and exit                                                     |
 | `-roots a,b`     | Directories for the `.env` sweep (default: your home); `~` expands, a missing one exits 2 |
 | `-max-depth n`   | Depth limit for the `.env` sweep (default 5)                                   |
 
-Exit codes: `0` complete run; `1` report produced but a collector failed, timed out or was partial (or an output was withheld by the leak check); `2` usage error or unusable state directory.
+Exit codes: `0` complete run; `1` report produced but a collector failed, timed out or was partial (or an output was withheld by the leak check); `2` usage error or unusable state directory. `-h` and `-version` exit `0`.
 
 ## Safety guarantees
 
