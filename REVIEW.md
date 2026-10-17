@@ -145,6 +145,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
 | <a id="a-56"></a>A-56 | `score()` appended items in map order and `sortItems` leaves tier, score and first-location ties unbroken, so tied items swapped places between identical runs and could straddle the five-item summary cutoff | [verified] test | [§2 d8](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-58"></a>A-58 | Two findings in one item sharing a display location printed it twice in the summary and HTML report, while history listed it once | [verified] test | — | built |
+| <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 
 ## Findings from the real run (2026-10-12)
 

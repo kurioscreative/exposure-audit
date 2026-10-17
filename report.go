@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	_ "embed"
 	"fmt"
 	"html/template"
@@ -286,6 +287,8 @@ func buildReportView(s *Snapshot) reportView {
 			Access: string(f.Gate) + ", " + life, Confidence: string(f.Confidence), Fingerprints: strings.Join(fps, " "),
 		})
 	}
+	// s.Findings is in persisted-location order; Keychain rows show live text (A-63).
+	slices.SortStableFunc(v.Findings, func(a, b reportFinding) int { return cmp.Compare(a.Location, b.Location) })
 	return v
 }
 

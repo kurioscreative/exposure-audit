@@ -153,3 +153,23 @@ func TestItemLocationsDisplayOnce(t *testing.T) {
 		t.Errorf("locations %q, want one", got)
 	}
 }
+
+// All findings sorts by the location shown, not the persisted slot hash (A-63).
+func TestReportFindingsInDisplayOrder(t *testing.T) {
+	kc := func(slot, live string) Finding {
+		f := fin(fnd("keychain-silent", "login keychain item "+slot, Propagation, slot))
+		f.LiveLocation = "login keychain: " + live
+		return f
+	}
+	s := &Snapshot{Findings: []Finding{kc("00", "zz"), kc("ff", "aa")}}
+	var got []string
+	for _, f := range buildReportView(s).Findings {
+		got = append(got, f.Location)
+	}
+	if want := []string{"login keychain: aa", "login keychain: zz"}; !slices.Equal(got, want) {
+		t.Errorf("rows %q, want %q", got, want)
+	}
+	if s.Findings[0].Location != "login keychain item 00" {
+		t.Error("view sort reordered the snapshot")
+	}
+}
