@@ -178,7 +178,7 @@ func TestSummaryShowsDeltaAndItems(t *testing.T) {
 	fx.runApp([]Collector{staticCollector("files", nil, npm)})
 	fx.now = fx.now.Add(time.Minute)
 	r := fx.runApp([]Collector{staticCollector("files", nil)})
-	for _, want := range []string{"Exposure score: 0.0  (-10.0 since 2026-10-12 09:30 UTC)", "1 resolved"} {
+	for _, want := range []string{"Exposure score (lower is better): 0.0  (-10.0 since 2026-10-12 09:30 UTC)", "resolved: npm-token (~/.npmrc)"} {
 		if !strings.Contains(r.stdout, want) {
 			t.Errorf("summary lacks %q:\n%s", want, r.stdout)
 		}

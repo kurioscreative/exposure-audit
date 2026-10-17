@@ -109,7 +109,7 @@ func TestSummaryPreventionAndNotes(t *testing.T) {
 	partial := testCollector{"dotenv", func(context.Context, *Env) ([]Finding, error) { return nil, ErrPartial }}
 	r := fx.runApp(append(cs, partial))
 	for _, want := range []string{
-		"Prevention: npm ignore-scripts on · Yarn enableScripts not configured",
+		"Prevention: 1 of 2 settings on · to fix: Yarn enableScripts (see -open)",
 		"Collector notes: dotenv: partial",
 		"Full Disk Access: yes",
 	} {
@@ -191,5 +191,64 @@ func TestReportChangesShowLiveText(t *testing.T) {
 	}
 	if s.Diff.Changes[0].Location != "login keychain item 00" {
 		t.Error("view changed the persisted diff")
+	}
+}
+
+// The summary says how many items it left out, names each change, and says
+// which way the score goes.
+func TestSummaryNamesChangesAndHiddenItems(t *testing.T) {
+	var fs []Finding
+	for i := range 7 {
+		fs = append(fs, fin(fnd("gh-token", fmt.Sprintf("~/f%d", i), Propagation, fmt.Sprint("fp", i))))
+	}
+	s := &Snapshot{Findings: fs, Diff: &Diff{Changes: []Change{
+		{Resolved, "gone", "npm auth token", "~/.npmrc"},
+		{Rotated, fs[0].ID, "gh-token", "~/f0"},
+	}}}
+	s.Credentials, s.Items, s.Total = score(s.Findings)
+	out := string(renderSummary(s))
+	for _, want := range []string{
+		"Exposure score (lower is better): ",
+		"  …and 2 more: run with -open for the full list\n",
+		"Changes since last run:\n  resolved: npm auth token (~/.npmrc)\n  rotated: gh-token (~/f0)\n",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("summary lacks %q:\n%s", want, out)
+		}
+	}
+	s.Items = s.Items[:summaryItems]
+	if out := string(renderSummary(s)); strings.Contains(out, "more:") {
+		t.Errorf("nothing hidden, but summary says so:\n%s", out)
+	}
+}
+
+func TestSummaryPreventionAllOn(t *testing.T) {
+	s := &Snapshot{Prevention: []PreventionRow{{Tool: "npm", Setting: "ignore-scripts", State: stateOn}}}
+	if got := preventionLine(s); got != "all 1 on" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestReportCopy(t *testing.T) {
+	s := &Snapshot{
+		Keychain:   &KeychainStats{Total: 1, Silent: 1},
+		Prevention: []PreventionRow{{Tool: "npm", Setting: "ignore-scripts", State: stateOff, Fix: "x"}},
+		Diff:       &Diff{Changes: []Change{{Resolved, "gone", "npm auth token", "~/.npmrc"}}},
+	}
+	out, _ := renderReport(s)
+	r := string(out)
+	for _, want := range []string{"1 password item: ", "usable without asking you", `<span class="chip hot">off</span>`} {
+		if !strings.Contains(r, want) {
+			t.Errorf("report lacks %q", want)
+		}
+	}
+	for _, bad := range []string{"1 password items", "silent or windowed", "Unknown means"} {
+		if strings.Contains(r, bad) {
+			t.Errorf("report has %q", bad)
+		}
+	}
+	s.Diff.Changes = append(s.Diff.Changes, Change{Unknown, "u", "AWS keys", "~/.aws/credentials"})
+	if out, _ := renderReport(s); !strings.Contains(string(out), "Unknown means") {
+		t.Error("unknown change without its explanation")
 	}
 }

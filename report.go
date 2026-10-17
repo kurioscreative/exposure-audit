@@ -75,7 +75,7 @@ func findingsByID(s *Snapshot) map[string]*Finding {
 
 func renderSummary(s *Snapshot) []byte {
 	var b bytes.Buffer
-	fmt.Fprintf(&b, "Exposure score: %.1f", s.Total)
+	fmt.Fprintf(&b, "Exposure score (lower is better): %.1f", s.Total)
 	if s.Diff != nil {
 		fmt.Fprintf(&b, "  (%+.1f since %s)", s.Diff.Delta, s.Diff.Previous.Format("2006-01-02 15:04 UTC"))
 	}
@@ -94,18 +94,16 @@ func renderSummary(s *Snapshot) []byte {
 		}
 		fmt.Fprintf(&b, "       Fix: %s\n", it.Fix)
 	}
-	if s.Diff != nil && len(s.Diff.Changes) > 0 {
-		counts := map[ChangeState]int{}
-		for _, c := range s.Diff.Changes {
-			counts[c.State]++
-		}
-		var parts []string
-		for _, st := range []ChangeState{New, Resolved, Rotated, Unknown} {
-			if counts[st] > 0 {
-				parts = append(parts, fmt.Sprintf("%d %s", counts[st], st))
+	if more := len(s.Items) - len(items); more > 0 {
+		fmt.Fprintf(&b, "  …and %d more: run with -open for the full list\n", more)
+	}
+	if groups := changeGroups(s); len(groups) > 0 {
+		b.WriteString("\nChanges since last run:\n")
+		for _, g := range groups {
+			for _, c := range g.List {
+				fmt.Fprintf(&b, "  %s: %s (%s)\n", g.State, c.Title, c.Location)
 			}
 		}
-		fmt.Fprintf(&b, "\nChanges since last run: %s\n", strings.Join(parts, ", "))
 	}
 	if s.Diff != nil && s.Diff.FDANow != "" {
 		fmt.Fprintf(&b, "Full Disk Access changed: %s → %s\n", s.Diff.FDABefore, s.Diff.FDANow)
@@ -138,16 +136,23 @@ func launchedFrom(s *Snapshot) string {
 	return out
 }
 
-// preventionLine is the one-line Prevention summary (decision 19).
+// preventionLine is the one-line Prevention summary (decision 19). It names
+// only the settings that need action; their fixes are in the -open report.
 func preventionLine(s *Snapshot) string {
 	if len(s.Prevention) == 0 {
 		return "not checked"
 	}
-	parts := make([]string, 0, len(s.Prevention))
+	var gaps []string
 	for _, p := range s.Prevention {
-		parts = append(parts, p.Tool+" "+p.Setting+" "+p.State)
+		if p.State != stateOn {
+			gaps = append(gaps, p.Tool+" "+p.Setting)
+		}
 	}
-	return strings.Join(parts, " · ")
+	if len(gaps) == 0 {
+		return fmt.Sprintf("all %d on", len(s.Prevention))
+	}
+	return fmt.Sprintf("%d of %d settings on · to fix: %s (see -open)",
+		len(s.Prevention)-len(gaps), len(s.Prevention), strings.Join(gaps, ", "))
 }
 
 // collectorNotes lists every collector that was not complete, with the
@@ -203,6 +208,7 @@ type reportView struct {
 	Changes    []reportChange
 	FDAChange  string
 	Items      []displayItem
+	MoreItems  int
 	Reach      []reportReach
 	Prevention []PreventionRow
 	Keychain   *KeychainStats
@@ -217,6 +223,8 @@ func buildReportView(s *Snapshot) reportView {
 		Launched:   launchedFrom(s),
 		Score:      fmt.Sprintf("%.1f", s.Total),
 		Items:      displayItems(s, reportItems),
+		MoreItems:  max(0, len(s.Items)-reportItems),
+		Changes:    changeGroups(s),
 		Prevention: s.Prevention,
 		Keychain:   s.Keychain,
 		Notes:      collectorNotes(s),
@@ -228,29 +236,12 @@ func buildReportView(s *Snapshot) reportView {
 			v.DeltaClass = "up"
 		}
 		v.Since = d.Previous.Format("2006-01-02 15:04 UTC")
-		byID := findingsByID(s)
-		for _, st := range []ChangeState{New, Resolved, Rotated, Unknown} {
-			var list []Change
-			for _, c := range d.Changes {
-				// A change to a current finding shows its live text, as Fix first
-				// does; resolved findings only have history's (A-62).
-				if f := byID[c.ID]; f != nil {
-					c.Title, c.Location = f.DisplayTitle(), f.DisplayLocation()
-				}
-				if c.State == st {
-					list = append(list, c)
-				}
-			}
-			if len(list) > 0 {
-				v.Changes = append(v.Changes, reportChange{string(st), list})
-			}
-		}
 		if d.FDANow != "" {
 			v.FDAChange = d.FDABefore + " → " + d.FDANow
 		}
 	}
 	for tier := 1; tier <= 5; tier++ {
-		label := tierLabel[tier] + ", silent or windowed"
+		label := tierLabel[tier] + ", usable without asking you"
 		if tier == 5 {
 			label = tierLabel[tier]
 		}
@@ -298,6 +289,32 @@ func buildReportView(s *Snapshot) reportView {
 	return v
 }
 
+// changeGroups groups the diff by state, for the summary and the report.
+func changeGroups(s *Snapshot) []reportChange {
+	if s.Diff == nil {
+		return nil
+	}
+	byID := findingsByID(s)
+	var groups []reportChange
+	for _, st := range []ChangeState{New, Resolved, Rotated, Unknown} {
+		var list []Change
+		for _, c := range s.Diff.Changes {
+			// A change to a current finding shows its live text, as Fix first
+			// does; resolved findings only have history's (A-62).
+			if f := byID[c.ID]; f != nil {
+				c.Title, c.Location = f.DisplayTitle(), f.DisplayLocation()
+			}
+			if c.State == st {
+				list = append(list, c)
+			}
+		}
+		if len(list) > 0 {
+			groups = append(groups, reportChange{string(st), list})
+		}
+	}
+	return groups
+}
+
 func humanBytes(n int64) string {
 	f := float64(n)
 	for _, unit := range []string{"B", "KB", "MB", "GB"} {
@@ -327,8 +344,8 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 
 {{if or .Changes .FDAChange}}<h2>Changes since last run</h2><div class="card">
 {{if .FDAChange}}<div><b>Full Disk Access</b> {{.FDAChange}}</div>{{end}}
-{{range .Changes}}<b>{{.State}}</b><ul>{{range .List}}<li>{{.Title}} <span class="mono">{{.Location}}</span></li>{{end}}</ul>{{end}}
-{{if .Changes}}<div class="sub">Unknown means the collector did not finish in one of the two runs; those credentials are left out of the change in score.</div>{{end}}
+{{range .Changes}}<b>{{.State}}</b><ul>{{range .List}}<li>{{.Title}} <span class="mono">{{.Location}}</span></li>{{end}}</ul>
+{{if eq .State "unknown"}}<div class="sub">Unknown means the collector did not finish in one of the two runs; those credentials are left out of the change in score.</div>{{end}}{{end}}
 </div>{{end}}
 
 <h2>Fix these first</h2>
@@ -338,6 +355,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 {{if .Detail}}<div>{{.Detail}}</div>{{end}}
 <div class="fix"><b>Fix:</b> {{.Fix}}</div></div>
 {{else}}<div class="card">Nothing found. Run it from the terminal you actually install packages from to be sure.</div>{{end}}
+{{if .MoreItems}}<div class="sub">{{.MoreItems}} more not shown here; every finding is listed under All findings below.</div>{{end}}
 
 <h2>Data reach</h2><div class="sub">What the same process can read beyond credentials. Not included in the score.</div>
 <div class="card tw"><table><tr><th>Location</th><th>Status</th><th>Size</th><th>Files</th><th>Note</th></tr>
@@ -347,11 +365,11 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 
 <h2>Prevention</h2><div class="sub">Whether package managers run install scripts. Not included in the score.</div>
 <div class="card tw"><table><tr><th>Tool</th><th>Setting</th><th>State</th><th>Fix</th></tr>
-{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono">{{.Setting}}</td><td>{{.State}}</td><td>{{.Fix}}</td></tr>
+{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono">{{.Setting}}</td><td><span class="chip {{if eq .State "on"}}cool{{else if eq .State "off"}}hot{{else}}warm{{end}}">{{.State}}</span></td><td>{{.Fix}}</td></tr>
 {{else}}<tr><td colspan="4">Not checked.</td></tr>{{end}}
 </table></div>
 
-{{with .Keychain}}<h2>Login keychain</h2><div class="card">{{.Total}} password items: <b>{{.Silent}} readable without a prompt</b>, {{.AppGated}} gated to specific apps, {{.Unknown}} undetermined.</div>{{end}}
+{{with .Keychain}}<h2>Login keychain</h2><div class="card">{{.Total}} password item{{if ne .Total 1}}s{{end}}: <b>{{.Silent}} readable without a prompt</b>, {{.AppGated}} gated to specific apps, {{.Unknown}} undetermined.</div>{{end}}
 
 <h2>All findings ({{len .Findings}})</h2><div class="card tw"><table><tr><th>Score</th><th>Finding</th><th>Location</th><th>Access</th><th>Fingerprints</th></tr>
 {{range .Findings}}<tr><td class="n">{{.Score}}</td><td>{{.Title}}{{if ne .Confidence "high"}} <span class="chip">{{.Confidence}} confidence</span>{{end}}</td><td class="mono">{{.Location}}</td><td>{{.Access}}</td><td class="mono">{{.Fingerprints}}</td></tr>{{end}}
