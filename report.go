@@ -365,7 +365,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 
 <h2>Prevention</h2><div class="sub">Whether package managers run install scripts. Not included in the score.</div>
 <div class="card tw"><table><tr><th>Tool</th><th>Setting</th><th>State</th><th>Fix</th></tr>
-{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono">{{.Setting}}</td><td><span class="chip {{if eq .State "on"}}cool{{else if eq .State "off"}}hot{{else}}warm{{end}}">{{.State}}</span></td><td>{{.Fix}}</td></tr>
+{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono key">{{.Setting}}</td><td><span class="chip {{if eq .State "on"}}cool{{else if eq .State "off"}}hot{{else}}warm{{end}}">{{.State}}</span></td><td>{{.Fix}}</td></tr>
 {{else}}<tr><td colspan="4">Not checked.</td></tr>{{end}}
 </table></div>
 

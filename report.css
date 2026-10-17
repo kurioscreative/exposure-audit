@@ -27,3 +27,4 @@ th{color:var(--mute);font-weight:500;font-size:12px}td.n{font-variant-numeric:ta
 .mono{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
 details{margin-top:8px}summary{cursor:pointer;color:var(--mute);font-size:13px}
 ul{padding-left:18px;margin:6px 0}li{margin:3px 0}
+.key{white-space:nowrap}
