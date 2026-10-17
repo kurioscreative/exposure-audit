@@ -15,7 +15,7 @@ h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}h2{font-size:16px;margin:
 .tile b{display:block;font-size:22px;font-variant-numeric:tabular-nums}.tile span{color:var(--mute);font-size:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}
 .card h3{margin:0;font-size:15px}.loc{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mute);
-word-break:break-all;margin:3px 0 8px}
+overflow-wrap:anywhere;margin:3px 0 8px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .chip{background:var(--chip);border-radius:99px;padding:2px 9px;font-size:11.5px;white-space:nowrap}
 .chip.hot{color:var(--hot)}.chip.warm{color:var(--warm)}.chip.cool{color:var(--cool)}
@@ -24,6 +24,6 @@ word-break:break-all;margin:3px 0 8px}
 .tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--mute);font-weight:500;font-size:12px}td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
-.mono{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.mono{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
 details{margin-top:8px}summary{cursor:pointer;color:var(--mute);font-size:13px}
 ul{padding-left:18px;margin:6px 0}li{margin:3px 0}
