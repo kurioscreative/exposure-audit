@@ -80,6 +80,8 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | 2026-10-12 | Known-file class is a floor; a token format can raise it                                        | —                | [A-55](#a-55)       |
 | 2026-10-12 | Keep the full matcher on `.git/config`; Prevention reads per-user files only, no `XDG_CONFIG_HOME` | [19](HANDOFF.md#2-decisions-already-made) | [A-20](#a-20), [A-42](#a-42) |
 | 2026-10-17 | Keychain SlotID follows Apple's unique key: adds non-default `sdmn` and `atyp`, escapes fields       | —                | [A-59](#a-59)       |
+| 2026-10-17 | `-roots`: `~` expands; a root that is not an existing directory is a usage error (exit 2)          | [17](HANDOFF.md#2-decisions-already-made), [18](HANDOFF.md#2-decisions-already-made) | [A-57](#a-57)       |
+| 2026-10-17 | No separate Title/Fix tie-break hardening: the Keychain slot fix and a unique-ID test guard close it | —                | [A-59](#a-59), [A-64](#a-64) |
 
 ## Findings from the document review
 
@@ -140,15 +142,15 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-53"></a>A-53 | Persisted Keychain `Detail` names the trusted command-line tool paths, and the Docker title the `docker-credential-*` name, both parsed from the dump | [verified] reading | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-54"></a>A-54 | Keychain `SlotID` is `HMAC(kc|service|account)` as specified, so unnamed items, and `inet` items differing only by protocol, port or path, share a slot | [verified] reading | [§5 Data model](HANDOFF.md#data-model) | built |
 | <a id="a-55"></a>A-55 | Known-file specs class by file, not token: a `ghp_` token in `.netrc` is service (tier 3) unless it also appears somewhere propagation | [verified] reading | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to) | built |
-| <a id="a-61"></a>A-61 | The diff subtracted two float totals summed in map order, so an unchanged run could print `(-0.0 since ...)` and persist `"delta": -0` | [verified] test | — | built |
-| <a id="a-59"></a>A-59 | Keychain `SlotID` omits inet `sdmn` and `atyp`, and the svce→srvr→labl fallback plus unescaped "\|" let distinct genp items share a slot, so distinct items merge into one Fix-first item, deleting one drops the score with no change line, and an added `sdmn` item reads as rotated | [verified] test | [§5 Data model](HANDOFF.md#data-model) | built |
-| <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
 | <a id="a-56"></a>A-56 | `score()` appended items in map order and `sortItems` leaves tier, score and first-location ties unbroken, so tied items swapped places between identical runs and could straddle the five-item summary cutoff | [verified] test | [§2 d8](HANDOFF.md#2-decisions-already-made) | built |
-| <a id="a-58"></a>A-58 | Two findings in one item sharing a display location printed it twice in the summary and HTML report, while history listed it once | [verified] test | — | built |
-| <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
-| <a id="a-62"></a>A-62 | The report's Changes list showed persisted `Change.Title` and `Location`, so a Keychain change read "login keychain item" plus a slot hash that appears nowhere else on the page | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-57"></a>A-57 | `-roots` elements were only cleaned, never made absolute: `-roots .` from home (or a trailing comma) swept Desktop, Documents and Downloads without `-probe-folders`, retitled `~/.env` and `~/.npmrc` as project files and corrupted the next diff; `~` after a comma stayed literal; a root symlinked into a protected folder was walked | [verified] test | [§2 d17](HANDOFF.md#2-decisions-already-made) | built |
+| <a id="a-58"></a>A-58 | Two findings in one item sharing a display location printed it twice in the summary and HTML report, while history listed it once | [verified] test | — | built |
+| <a id="a-59"></a>A-59 | Keychain `SlotID` omits inet `sdmn` and `atyp`, and the svce→srvr→labl fallback plus unescaped "\|" let distinct genp items share a slot, so distinct items merge into one Fix-first item, deleting one drops the score with no change line, and an added `sdmn` item reads as rotated | [verified] test | [§5 Data model](HANDOFF.md#data-model) | built |
 | <a id="a-60"></a>A-60 | Nested or repeated sweep roots emitted identical findings (same ID and SlotID) for every `.env`, project `.npmrc`/`.yarnrc.yml` and Rails key in the overlap, doubling the summary count and the diff's "new" | [verified] test | — | built |
+| <a id="a-61"></a>A-61 | The diff subtracted two float totals summed in map order, so an unchanged run could print `(-0.0 since ...)` and persist `"delta": -0` | [verified] test | — | built |
+| <a id="a-62"></a>A-62 | The report's Changes list showed persisted `Change.Title` and `Location`, so a Keychain change read "login keychain item" plus a slot hash that appears nowhere else on the page | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
+| <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
+| <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 
