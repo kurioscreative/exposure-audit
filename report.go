@@ -44,25 +44,21 @@ func displayItems(s *Snapshot, limit int) []displayItem {
 	byID := findingsByID(s)
 	var out []displayItem
 	for i, it := range s.Items[:min(limit, len(s.Items))] {
-		d := displayItem{N: i + 1, Title: it.Title, Locations: it.Locations, Tier: tierLabel[it.Tier],
+		d := displayItem{N: i + 1, Title: it.Title, Tier: tierLabel[it.Tier],
 			Hot: it.Tier <= 1, Secrets: len(it.Credentials), Fix: it.Fix, Score: "pinned"}
 		if it.Tier > 0 {
 			d.Score = fmt.Sprintf("%.1f", it.Score)
 		}
-		if f := byID[it.titleFrom]; f != nil {
+		if f := byID[it.titleFrom]; f != nil { // nil for the pinned FDA item
 			d.Title, d.Detail = f.DisplayTitle(), f.DisplayDetail()
 		}
-		if len(it.Findings) > 0 {
-			d.Locations = nil
-			for _, id := range it.Findings {
-				if f := byID[id]; f != nil {
-					d.Locations = append(d.Locations, f.DisplayLocation())
-				}
-			}
-			// it.Findings is in ID order, and IDs hash the secret: sort so a
-			// rotation does not reshuffle the locations.
-			slices.Sort(d.Locations)
+		for _, id := range it.Findings {
+			d.Locations = append(d.Locations, byID[id].DisplayLocation())
 		}
+		// it.Findings is in persisted-location order; a Keychain item's live
+		// location sorts differently from its slot hash.
+		slices.Sort(d.Locations)
+		d.Locations = slices.Compact(d.Locations) // A-58
 		out = append(out, d)
 	}
 	return out

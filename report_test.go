@@ -126,7 +126,7 @@ func TestSummaryPreventionAndNotes(t *testing.T) {
 }
 
 // An item's locations display in path order. Finding IDs hash the secret's
-// fingerprint, so ordering by ID reshuffled them whenever a secret rotated.
+// fingerprint, so ordering by ID could reshuffle them when a secret rotated.
 func TestItemLocationsDisplayInPathOrder(t *testing.T) {
 	for i := range 20 {
 		fp := fmt.Sprintf("gh%d", i) // each fingerprint stands for one rotation
@@ -139,5 +139,17 @@ func TestItemLocationsDisplayInPathOrder(t *testing.T) {
 		if want := []string{"~/.config/gh/hosts.yml", "~/.zsh_history"}; !slices.Equal(got, want) {
 			t.Fatalf("fingerprint %s: locations %q, want %q", fp, got, want)
 		}
+	}
+}
+
+// Two findings in one item at the same location show it once (A-58).
+func TestItemLocationsDisplayOnce(t *testing.T) {
+	s := &Snapshot{Findings: []Finding{
+		fin(fnd("aws-static", "~/.aws/credentials", Cloud, "ak")),
+		with(fnd("aws-session", "~/.aws/credentials", Cloud, "ak"), func(f *Finding) { f.Lifetime = Session }),
+	}}
+	_, s.Items, _ = score(s.Findings)
+	if got := displayItems(s, 1)[0].Locations; !slices.Equal(got, []string{"~/.aws/credentials"}) {
+		t.Errorf("locations %q, want one", got)
 	}
 }
