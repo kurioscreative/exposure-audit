@@ -203,14 +203,14 @@ func TestSummaryNamesChangesAndHiddenItems(t *testing.T) {
 	}
 	s := &Snapshot{Findings: fs, Diff: &Diff{Changes: []Change{
 		{Resolved, "gone", "npm auth token", "~/.npmrc"},
-		{Rotated, fs[0].ID, "gh-token", "~/f0"},
+		{Modified, fs[0].ID, "gh-token", "~/f0"},
 	}}}
 	s.Credentials, s.Items, s.Total = score(s.Findings)
 	out := string(renderSummary(s))
 	for _, want := range []string{
 		"Exposure score (lower is better): ",
 		"  …and 2 more: run with -open for the full list\n",
-		"Changes since last run:\n  resolved: npm auth token (~/.npmrc)\n  rotated: gh-token (~/f0)\n",
+		"Changes since last run:\n  resolved: npm auth token (~/.npmrc)\n  modified: gh-token (~/f0)\n",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("summary lacks %q:\n%s", want, out)

@@ -69,7 +69,7 @@ func (envCollector) Collect(_ context.Context, env *Env) ([]Finding, error) {
 			Kind:  "env",
 			Title: "Secrets exported in this shell's environment",
 			// A fixed label per class keeps the SlotID stable when variables
-			// come and go, so the diff can say rotated (A-46). Names, never
+			// come and go, so the diff can say modified (A-46). Names, never
 			// values, go in Detail and Hit.Name.
 			Location: "environment (" + string(class) + ")",
 			Lifetime: Static,

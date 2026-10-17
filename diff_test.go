@@ -38,7 +38,7 @@ func states(d *Diff) map[ChangeState][]string {
 	return m
 }
 
-func TestDiffResolvedAndRotated(t *testing.T) {
+func TestDiffResolvedAndModified(t *testing.T) {
 	fx := newFixture(t)
 	npm := fnd("npm-token", "~/.npmrc", Propagation, "npm1")
 	gh := fnd("gh-token", "~/.config/gh/hosts.yml", Propagation, "gh1")
@@ -54,10 +54,10 @@ func TestDiffResolvedAndRotated(t *testing.T) {
 		t.Errorf("after delete: %+v", s.Diff)
 	}
 
-	// Replacing the token: rotated, total unchanged.
+	// Replacing the token: modified, total unchanged.
 	gh2 := fnd("gh-token", "~/.config/gh/hosts.yml", Propagation, "gh2")
 	s, _ = fx.runJSON([]Collector{staticCollector("files", nil, gh2)})
-	if s.Diff.Delta != 0 || fmt.Sprint(states(s.Diff)) != "map[rotated:[~/.config/gh/hosts.yml]]" {
+	if s.Diff.Delta != 0 || fmt.Sprint(states(s.Diff)) != "map[modified:[~/.config/gh/hosts.yml]]" {
 		t.Errorf("after rotation: %+v", s.Diff)
 	}
 

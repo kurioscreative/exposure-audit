@@ -296,7 +296,7 @@ func changeGroups(s *Snapshot) []reportChange {
 	}
 	byID := findingsByID(s)
 	var groups []reportChange
-	for _, st := range []ChangeState{New, Resolved, Rotated, Unknown} {
+	for _, st := range []ChangeState{New, Resolved, Modified, Unknown} {
 		var list []Change
 		for _, c := range s.Diff.Changes {
 			// A change to a current finding shows its live text, as Fix first

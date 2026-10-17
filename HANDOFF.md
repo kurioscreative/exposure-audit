@@ -222,7 +222,7 @@ Item        one entry in "Fix first" (derived in score.go)
 - `SlotID`: `sha256(kind | location)[:12]`, except Keychain items (above). Identifies where credentials live.
 - `ID`: `sha256(kind | location | sorted fingerprints)[:12]`. Identifies the specific credentials in that place.
 
-Two ids let the diff tell "rotated" (same slot, different id) from "resolved" and "new". The prototype has only `ID` and cannot.
+Two ids let the diff tell "modified" (same slot, different id) from "resolved" and "new". The prototype has only `ID` and cannot.
 
 There is no compatibility requirement with the prototype's snapshot format. Version the snapshot schema from 1.
 
@@ -287,7 +287,7 @@ Decisions 7–9 are the response. The ranking fixture in section 11 encodes it.
 
 Snapshot files are created with `O_EXCL`; on collision, append `-2`, `-3`, … ([A-30](REVIEW.md#a-30)).
 
-**Diff** states per finding: `new`, `resolved`, `rotated` (same `SlotID`, different `ID`, or a changed Keychain `mdat`), and `unknown`. A finding whose collector was not `complete` in either run is `unknown`, never `resolved`, and the credentials only it holds are left out of both totals when computing the delta ([A-13](REVIEW.md#a-13)).
+**Diff** states per finding: `new`, `resolved`, `modified` (same `SlotID`, different `ID`: a secret replaced, added or removed in that place, or a changed Keychain `mdat`; it was `rotated` until 2026-10-17), and `unknown`. A finding whose collector was not `complete` in either run is `unknown`, never `resolved`, and the credentials only it holds are left out of both totals when computing the delta ([A-13](REVIEW.md#a-13)).
 
 ### Command line
 
@@ -342,7 +342,7 @@ Also run `go vet` and `gofmt -l` in the test script. The whole suite should fini
 | Prototype behavior                                                          | Go design instead                                                                                                                     |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Diff compares against the latest snapshot regardless of terminal            | Context-keyed history (section 5)                                                                                                     |
-| One id, so rotation looks like resolve plus new                             | `SlotID` plus `ID`, with a "rotated" state                                                                                            |
+| One id, so rotation looks like resolve plus new                             | `SlotID` plus `ID`, with a "modified" state                                                                                           |
 | One score per location, multiplier for several secrets, duplicates add up   | One score per credential (decision 7)                                                                                                 |
 | Ranking by score alone                                                      | Tiers (decision 8)                                                                                                                    |
 | `SECRET_NAME` matches a bare `AUTH`, so `author` is a hit; no entropy check | See M3                                                                                                                                |
@@ -381,7 +381,7 @@ M0 and M1 are sequential and define the contracts. After M1, the M2 collector gr
 
 ### M1. Core
 
-- Model (`Finding`, `Hit`, `Credential`, `Item`), fingerprinting and salt creation, scoring, credential grouping, items and tiers, state directory, snapshot writing, context key, diff with new, resolved, rotated and unknown, exit codes.
+- Model (`Finding`, `Hit`, `Credential`, `Item`), fingerprinting and salt creation, scoring, credential grouping, items and tiers, state directory, snapshot writing, context key, diff with new, resolved, modified and unknown, exit codes.
 - Terminal summary and `-json` output.
 - Acceptance: table-driven tests for every multiplier and tier; grouping tests (same fingerprint in two files is one credential; same set of locations is one item); diff tests covering same-context and cross-context runs, rotation, and partial collectors; exit-code tests.
 
@@ -483,7 +483,7 @@ Total: **68.2** (11 credentials). The prototype scored the same home 76.4, becau
 
 "Fix first" order: the four propagation items (`.npmrc`, the `ghp_` token in two places, `mcp.json`, `id_plain`; tier 1), then AWS static and AWS session as two items (tier 2), then the `.env` item and the `sk-proj-` key (tier 3), then `MY_SERVICE_TOKEN` (tier 4), then `id_enc` (tier 5). Within a tier: score, then location.
 
-Behavioral checks: deleting `.npmrc` and rerunning lowers the total by 10.0 and lists the finding as resolved. Replacing its token lists it as rotated with the total unchanged. Exit code 0.
+Behavioral checks: deleting `.npmrc` and rerunning lowers the total by 10.0 and lists the finding as resolved. Replacing its token lists it as modified with the total unchanged. Exit code 0.
 
 ### Additional fixtures
 

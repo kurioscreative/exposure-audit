@@ -142,7 +142,7 @@ func decodeHexRuns(s string) string {
 	return b.String()
 }
 
-func TestKeychainChangedMdatIsRotated(t *testing.T) {
+func TestKeychainChangedMdatIsModified(t *testing.T) {
 	dump := readTestdata(t, "keychain_section12.txt")
 	dump = strings.Replace(dump, `    "svce"`, "    \"mdat\"<timedate>=0x00  \"20250101120000Z\\000\"\n    \"svce\"", 1)
 	fx := keychainFixture(t, &dump)
@@ -153,8 +153,8 @@ func TestKeychainChangedMdatIsRotated(t *testing.T) {
 	if first.Findings[0].SlotID != second.Findings[0].SlotID || first.Findings[0].ID == second.Findings[0].ID {
 		t.Fatalf("mdat change: slot %s→%s id %s→%s", first.Findings[0].SlotID, second.Findings[0].SlotID, first.Findings[0].ID, second.Findings[0].ID)
 	}
-	if len(second.Diff.Changes) != 1 || second.Diff.Changes[0].State != Rotated || second.Diff.Delta != 0 {
-		t.Errorf("diff %+v, want one rotated, delta 0 (A-34)", second.Diff)
+	if len(second.Diff.Changes) != 1 || second.Diff.Changes[0].State != Modified || second.Diff.Delta != 0 {
+		t.Errorf("diff %+v, want one modified, delta 0 (A-34)", second.Diff)
 	}
 }
 

@@ -83,10 +83,10 @@ func TestAcceptanceBehavioralChecks(t *testing.T) {
 	fx.runApp(nil, "-json")
 	fx.now = fx.now.Add(time.Minute)
 
-	// Replacing the npm token: rotated, total unchanged.
+	// Replacing the npm token: modified, total unchanged.
 	fx.write(".npmrc", "//registry.npmjs.org/:_authToken="+fx.secret("npm_", 36)+"\n")
 	s, code := fx.runJSON(nil)
-	if code != 0 || s.Total != 68.2 || s.Diff.Delta != 0 || stateOf(s.Diff, "~/.npmrc") != Rotated {
+	if code != 0 || s.Total != 68.2 || s.Diff.Delta != 0 || stateOf(s.Diff, "~/.npmrc") != Modified {
 		t.Errorf("rotation: exit %d total %v diff %+v", code, s.Total, s.Diff)
 	}
 
@@ -177,8 +177,8 @@ func TestEnvironmentChangeIsRotation(t *testing.T) {
 	fx.runJSON(nil)
 	fx.setenv("OTHER_SERVICE_TOKEN", fx.secret("", 32))
 	s, _ := fx.runJSON(nil)
-	if got := stateOf(s.Diff, "environment (generic)"); got != Rotated || s.Diff.Delta != 3 {
-		t.Errorf("state %q delta %v; want rotated, +3.0", got, s.Diff.Delta)
+	if got := stateOf(s.Diff, "environment (generic)"); got != Modified || s.Diff.Delta != 3 {
+		t.Errorf("state %q delta %v; want modified, +3.0", got, s.Diff.Delta)
 	}
 	fx.assertNoMarkers()
 }

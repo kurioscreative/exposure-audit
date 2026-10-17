@@ -15,8 +15,8 @@ type ChangeState string
 const (
 	New      ChangeState = "new"
 	Resolved ChangeState = "resolved"
-	Rotated  ChangeState = "rotated" // same SlotID, different ID (includes a changed Keychain mdat)
-	Unknown  ChangeState = "unknown" // its collector was not complete in one of the runs (A-13)
+	Modified ChangeState = "modified" // same SlotID, different ID: a secret replaced, added or removed, or a changed Keychain mdat
+	Unknown  ChangeState = "unknown"  // its collector was not complete in one of the runs (A-13)
 )
 
 type Change struct {
@@ -55,7 +55,7 @@ func diffSnapshots(prev, cur *Snapshot) *Diff {
 			unknown[f.ID] = true
 		case sameID:
 		case sameSlot:
-			d.add(Rotated, f)
+			d.add(Modified, f)
 		default:
 			d.add(New, f)
 		}

@@ -82,6 +82,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | 2026-10-17 | Keychain SlotID is Apple's unique key per class (genp svce, acct; inet adds sdmn, atyp); no backward compatibility for slots | —                | [A-59](#a-59)       |
 | 2026-10-17 | `-roots`: `~` expands; a root that is not an existing directory is a usage error (exit 2)          | [17](HANDOFF.md#2-decisions-already-made), [18](HANDOFF.md#2-decisions-already-made) | [A-57](#a-57)       |
 | 2026-10-17 | Accept: a missing `-roots` entry inside a protected folder is not checked, so with Full Disk Access `yes` and no `-probe-folders` a typo there is a silent empty sweep | [17](HANDOFF.md#2-decisions-already-made) | [A-57](#a-57)       |
+| 2026-10-17 | Diff state `rotated` is renamed `modified`: same slot, different fingerprints covers secrets added and removed, not only replaced | [§5](HANDOFF.md#5-architecture) | [A-46](#a-46)       |
 | 2026-10-17 | No separate Title/Fix tie-break hardening: the Keychain slot fix and a unique-ID test guard close it | —                | [A-59](#a-59), [A-64](#a-64) |
 
 ## Findings from the document review

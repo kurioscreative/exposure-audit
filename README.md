@@ -43,7 +43,7 @@ Fix first:
 
 Changes since last run:
   resolved: API keys in an AI tool or MCP config (~/.cursor/mcp.json)
-  rotated: npm auth token (~/.npmrc)
+  modified: npm auth token (~/.npmrc)
 ```
 
 ## What it checks
@@ -121,7 +121,7 @@ These are enforced by tests (see [`invariants_test.go`](invariants_test.go) and 
 
 ## History and privacy
 
-`~/.exposure-audit/` holds a random salt and one JSON snapshot per run. Snapshots contain titles, locations and salted fingerprints, so the next run can tell you what was resolved, rotated or new. They never contain secret values or Keychain service and account names. The history is still a map of where your secrets live, and the kind of script this tool models can read it. Delete the folder if that matters more to you than tracking progress.
+`~/.exposure-audit/` holds a random salt and one JSON snapshot per run. Snapshots contain titles, locations and salted fingerprints, so the next run can tell you what was resolved, modified or new. They never contain secret values or Keychain service and account names. The history is still a map of where your secrets live, and the kind of script this tool models can read it. Delete the folder if that matters more to you than tracking progress.
 
 ## Limitations
 
