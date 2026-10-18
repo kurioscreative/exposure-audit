@@ -25,6 +25,7 @@ func TestScreenshotFixture(t *testing.T) {
 		chain := map[string]string{"4242": "4100 exposure-audit", "4100": "4000 -zsh", "4000": "1 iTerm2"}
 		return []byte(chain[args[len(args)-1]]), 0
 	}
+	fx.setenv("__CFBundleIdentifier", "com.googlecode.iterm2") // macOS sets it for apps launched from Finder or the Dock
 	fx.setenv("TERM_PROGRAM", "iTerm.app")
 	fx.setenv("USER", "demo")
 	// Sparse files: realistic sizes in Data reach without writing gigabytes.

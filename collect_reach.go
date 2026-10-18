@@ -22,6 +22,32 @@ type Context struct {
 	Key   string   `json:"key"`
 }
 
+// appNames turns common terminal and IDE identifiers into the names System
+// Settings shows. Display only: Context.App and Key keep the raw identifier,
+// so a new name here never splits a launch context's history.
+var appNames = map[string]string{
+	"com.mitchellh.ghostty":         "Ghostty",
+	"com.googlecode.iterm2":         "iTerm2",
+	"iTerm.app":                     "iTerm2",
+	"com.apple.Terminal":            "Terminal",
+	"Apple_Terminal":                "Terminal",
+	"com.microsoft.VSCode":          "Visual Studio Code",
+	"com.todesktop.230313mzl4w4u92": "Cursor",
+	"dev.warp.Warp-Stable":          "Warp",
+	"com.github.wez.wezterm":        "WezTerm",
+	"net.kovidgoyal.kitty":          "kitty",
+	"org.alacritty":                 "Alacritty",
+	"dev.zed.Zed":                   "Zed",
+}
+
+// appName is the display name for a Context.App, or the identifier itself.
+func appName(id string) string {
+	if name, ok := appNames[id]; ok {
+		return name
+	}
+	return id
+}
+
 // agentNames are process names that mean the shell runs under a coding agent.
 // Unverified on macOS: an agent started through node may show as "node".
 var agentNames = []string{"claude", "codex", "cursor-agent", "gemini", "aider", "goose"}

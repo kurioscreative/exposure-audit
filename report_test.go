@@ -258,3 +258,20 @@ func TestReportCopy(t *testing.T) {
 		t.Error("unknown change without its explanation")
 	}
 }
+
+// The launching app shows the name System Settings uses, not its bundle
+// identifier; an unlisted identifier shows as is.
+func TestLaunchedFromShowsAppName(t *testing.T) {
+	for id, want := range map[string]string{
+		"com.mitchellh.ghostty": "Ghostty (zsh < tmux)",
+		"com.example.term":      "com.example.term (zsh < tmux)",
+	} {
+		s := &Snapshot{Context: Context{App: id, Chain: []string{"zsh", "tmux"}}}
+		if got := launchedFrom(s); got != want {
+			t.Errorf("%s: got %q, want %q", id, got, want)
+		}
+	}
+	if got := pinnedFDAItem(appName("com.googlecode.iterm2")).Title; got != "Full Disk Access granted to iTerm2" {
+		t.Errorf("pinned item %q", got)
+	}
+}

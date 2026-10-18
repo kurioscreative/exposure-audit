@@ -207,7 +207,7 @@ func (a *App) Main(args []string) int {
 	sortFindings(snap.Findings)
 	snap.Credentials, snap.Items, snap.Total = score(snap.Findings)
 	if fda == "yes" {
-		snap.Items = append([]Item{pinnedFDAItem(launch.App)}, snap.Items...)
+		snap.Items = append([]Item{pinnedFDAItem(appName(launch.App))}, snap.Items...)
 	}
 	if prev := previousSnapshot(stateDir, launch.Key); prev != nil {
 		snap.Diff = diffSnapshots(prev, snap)

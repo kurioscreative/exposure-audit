@@ -132,7 +132,7 @@ func countTier(s *Snapshot, tier int) int {
 }
 
 func launchedFrom(s *Snapshot) string {
-	out := s.Context.App
+	out := appName(s.Context.App)
 	if s.Context.Agent != "" {
 		out += " under " + s.Context.Agent
 	}

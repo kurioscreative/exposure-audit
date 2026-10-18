@@ -155,6 +155,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
 | <a id="a-66"></a>A-66 | A positional argument or a negative `-max-depth` printed the full help with no line naming the mistake, and an unknown flag's error sat above twenty lines of usage; a mistake now gets one line naming it and a pointer to `-h` | [verified] test | — | built |
 | <a id="a-67"></a>A-67 | With `-open`, the summary still said "run with -open for the full list", and the prompt then hung for the browser wait with no explanation; the summary now points at the report, and the wait is announced on stderr | [verified] test | — | built |
+| <a id="a-68"></a>A-68 | The summary, report and pinned Full Disk Access item showed the launching app as its bundle identifier (`com.mitchellh.ghostty`) while the fix pointed at a System Settings list that names it "Ghostty"; common identifiers now display as app names. `Context.App` and `Key` keep the identifier, so history is not split | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 
