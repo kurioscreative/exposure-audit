@@ -10,7 +10,7 @@ import (
 
 // sanitizeKeychainSample implements -sanitize-keychain-sample: it dumps the
 // login keychain's access lists (never values, invariant 7) and prints the
-// dump with every name replaced, so Glenn can read it and commit it to
+// dump with every name replaced, so the maintainer can read it and commit it to
 // testdata/ for the classifier (M2, R-07).
 //
 // Kept: line structure, indentation, the class line, attribute tags and

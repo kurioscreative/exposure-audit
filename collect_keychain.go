@@ -13,7 +13,7 @@ import (
 )
 
 // PROVISIONAL (R-07): the parser and classifier are written against the
-// hand-written sample in HANDOFF §12 plus assumptions below. Glenn's real
+// hand-written sample in HANDOFF §12 plus assumptions below. A real
 // dump confirmed partition lists and mdat exist but has not been inspected
 // structurally. Refit against testdata/ once the sanitized sample is in.
 //

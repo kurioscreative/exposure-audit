@@ -85,7 +85,7 @@ type awsCache struct {
 // static credential whether or not its access token has expired, because
 // the refresh token mints new ones (decision 13, A-16). Medium confidence:
 // refresh-token lifetime depends on the IAM Identity Center session setting,
-// unverified on Glenn's Mac. Other caches count only while unexpired.
+// unverified on a developer Mac. Other caches count only while unexpired.
 func awsCaches(env *Env) []Finding {
 	var refresh, live []Match
 	for _, d := range []string{".aws/sso/cache", ".aws/cli/cache"} {

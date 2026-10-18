@@ -77,7 +77,7 @@ func launchContext(ctx context.Context, env *Env) Context {
 }
 
 // parentChain walks up to 8 ancestors with /bin/ps. Inside tmux the chain
-// ends at tmux (observed on Glenn's Mac), which is why it is display only.
+// ends at tmux (observed on a developer Mac), which is why it is display only.
 func parentChain(ctx context.Context, env *Env) []string {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

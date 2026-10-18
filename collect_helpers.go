@@ -15,7 +15,7 @@ import (
 //
 // gcloud's active account and AWS sso_session are not handled here: they have
 // no Keychain item to enrich, and reporting them would need a new finding
-// (question for Glenn in the M4 handback).
+// (question for the maintainer in the M4 handback).
 
 type helperConfig struct {
 	gitOSXKeychain bool // credential.helper is osxkeychain

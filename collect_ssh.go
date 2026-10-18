@@ -141,7 +141,7 @@ func agentFinding(ctx context.Context, env *Env, a sshAgent) (*Finding, []string
 	switch {
 	case strings.Contains(strings.ToLower(a.sock), "1password"):
 		// Decision 10: 1Password asks once, then lets the same app use the key
-		// for a while. Unverified on Glenn's Mac which window applies to a
+		// for a while. Unverified on a developer Mac which window applies to a
 		// child process of an approved terminal (medium confidence).
 		f.Gate = Windowed
 		f.Detail = "This is the 1Password SSH agent. It asks for approval, then allows further use for a while without asking."
