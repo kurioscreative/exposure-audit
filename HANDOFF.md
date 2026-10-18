@@ -33,17 +33,17 @@ The consequence for design: the tool must measure from the attacker's exact posi
 
 ## 2. Decisions already made
 
-Do not reopen these without asking Glenn.
+Do not reopen these without asking the maintainer.
 
 1. **Scope:** credentials are scored. Other data (Documents, iCloud, Mail, browser profiles) gets a coarse reach check with sizes and is not scored.
-2. **Audience:** Glenn only for now, built so it could be shared later.
+2. **Audience:** the maintainer only for now, built so it could be shared later.
 3. **Depth:** offline inventory. Checking whether a token is live or what it is scoped to needs network calls and is a possible later opt-in mode.
 4. **Tracking:** salted fingerprints and run history from the start.
 5. **Language:** Go, standard library only, no cgo, one static binary. Chosen over Python (not on a stock Mac, interpreter is attack surface), Swift (agents cannot build or test Apple-framework code on Linux), Rust (needs crates for hashing, JSON, and regex), Bash (unsafe secret handling), and Ruby (deprecated on macOS).
 
-One accepted cost of decision 5: no native Keychain API access. Keychain analysis parses the output of `/usr/bin/security`. Glenn's macOS run (section 7) showed the dump is parseable and does not prompt.
+One accepted cost of decision 5: no native Keychain API access. Keychain analysis parses the output of `/usr/bin/security`. The maintainer's macOS run (section 7) showed the dump is parseable and does not prompt.
 
-Decided 2026-10-12, after the review and a prototype run on Glenn's Mac:
+Decided 2026-10-12, after the review and a prototype run on a developer Mac:
 
 6. **Observe macOS before building.** Done ([A-01](REVIEW.md#a-01)). Remaining macOS unknowns are in M5.
 7. **Score each credential once** ([A-14](REVIEW.md#a-14)). A credential is a unique fingerprint. Its score is the highest it earns in any location; every location is listed. The prototype's multiplier for several secrets in one file is dropped: each secret already scores as its own credential ([A-03](REVIEW.md#a-03)).
@@ -61,7 +61,7 @@ Decided 2026-10-12, after the review and a prototype run on Glenn's Mac:
 19. **An unscored "Prevention" section** reports whether package managers run install scripts and whether release-age delays are set ([A-32](REVIEW.md#a-32)).
 20. **The content sweep (M6) is post-MVP** ([A-24](REVIEW.md#a-24)).
 21. **A passphrase-protected SSH key that no agent holds keeps the 0.1 gated multiplier.**
-22. **Build from source on Glenn's Mac.** Go 1.26 is installed through mise.
+22. **Build from source on a developer Mac.** Go 1.26 is installed through mise.
 
 ## 3. Invariants
 
@@ -78,8 +78,8 @@ Every change must preserve these. Section 6 says how each is enforced mechanical
 
 ## 4. Rules for agents
 
-- **Never run the tool against a real home directory**, including Glenn's linked Mac, unless he explicitly asks in that session. Tests use `t.TempDir()` homes.
-- **Never paste a report, snapshot, or real path listing into a conversation or commit.** The report is a map of where secrets live. The terminal summary (titles, paths, scores) is the only thing Glenn has agreed to share back.
+- **Never run the tool against a real home directory**, including a linked developer Mac, unless the maintainer explicitly asks in that session. Tests use `t.TempDir()` homes.
+- **Never paste a report, snapshot, or real path listing into a conversation or commit.** The report is a map of where secrets live. The terminal summary (titles, paths, scores) is the only thing the maintainer has agreed to share back.
 - **Build fake tokens at runtime.** Fixtures need strings that match real token formats. Committing them as literals trips secret scanners and push protection. Assemble them by concatenation in test helpers.
 - **Report honestly.** If something is unverified on macOS, say so in a code comment and in your handback.
 - **Ask before:** changing score weights, adding any network path, adding a dependency, enabling cgo, executing a new program, or changing an invariant.
@@ -166,7 +166,7 @@ Collectors run concurrently under one global deadline of 60 seconds, with per-co
 
 - `recover` only catches panics in its own goroutine. Collectors must not start goroutines with a bare `go`; they use a runner-provided helper that recovers and reports ([A-11](REVIEW.md#a-11)).
 - A collector that ignores `ctx` (a hung mount, a file-provider directory) cannot be stopped. At the deadline the runner stops waiting, records a timeout, and renders without it.
-- Each collector reports a status: `complete`, `partial` (budget hit), `failed`, `timeout`, or `skipped` (not applicable, such as the Keychain on Linux, or turned off, such as `-skip-keychain`). The diff treats every status except `complete` as not complete, so skipping the Keychain does not look like a 231-point improvement. The exit code treats `skipped` as normal ([A-13](REVIEW.md#a-13), [A-37](REVIEW.md#a-37)).
+- Each collector reports a status: `complete`, `partial` (budget hit), `failed`, `timeout`, or `skipped` (not applicable, such as the Keychain on Linux, or turned off, such as `-skip-keychain`). The diff treats every status except `complete` as not complete, so skipping the Keychain does not look like a large improvement. The exit code treats `skipped` as normal ([A-13](REVIEW.md#a-13), [A-37](REVIEW.md#a-37)).
 - Never read a file that iCloud or a file provider has evicted: check `SF_DATALESS` (`0x40000000` in `syscall.Stat_t.Flags`) first. Reading one downloads it, which is network traffic caused by the tool ([A-29](REVIEW.md#a-29)). Size measurement uses `stat` only.
 - Walks are in sorted order, so a budget cut drops the same files each time.
 - Walks never enter TCC-protected folders unless `-probe-folders` is set or Full Disk Access is inferred `yes`: `Desktop`, `Documents`, `Downloads`, `Library/Mobile Documents`, `Library/CloudStorage`, and `Pictures`. Listing one can raise the permission prompt that decision 17 makes opt-in. The prototype had this rule (`skip_protected`) ([A-35](REVIEW.md#a-35)).
@@ -258,11 +258,11 @@ An item's tier is the best tier among its credentials. The terminal shows the to
 
 **Committed dotenv.** A dotenv file is committed if git tracks it. Determine this by reading the repository's `.git/index` directly; running `git` is not allowed (invariant 8). In a worktree, `.git` is a file containing `gitdir: <path>`; follow it. Support index versions 2 and 3 (paths stored whole) and 4 (paths prefix-compressed). If parsing fails, treat the file as not committed and set confidence to medium.
 
-What the first real run showed (2026-10-12, Glenn's Mac, prototype, summary only):
+What the first real run showed (2026-10-12, a developer Mac, prototype, summary only):
 
-- 74 findings without the Keychain, 117 with it. That is a dump, not a short list.
-- The top five were all `.env` files scoring 14 or 16, which only cloud findings with four or five secrets produce. Four of the five were the same file in four git worktrees of one repository.
-- No worm vector reached the top five, although 6 existed.
+- Dozens of findings without the Keychain, and more with it. That is a dump, not a short list.
+- The top five were all `.env` files whose high scores came from several cloud-named variables in one file. Most were one file duplicated across git worktrees of one repository.
+- No worm vector reached the top five, although several existed.
 
 Decisions 7–9 are the response. The ranking fixture in section 11 encodes it.
 
@@ -281,7 +281,7 @@ Decisions 7–9 are the response. The ranking fixture in section 11 encodes it.
 
 **Context key.** Each snapshot records the launching application and whether the shell runs under a coding agent. Diffs compare only against the most recent snapshot with the same key.
 
-- **Application:** `__CFBundleIdentifier` from the environment, falling back to `TERM_PROGRAM`, then `unknown` ([A-05](REVIEW.md#a-05)). The `ps` parent chain is for display only. Observed on Glenn's Mac: inside tmux, `TERM_PROGRAM` is `tmux` and the chain ends at `tmux`, but `__CFBundleIdentifier` still held the terminal's bundle id.
+- **Application:** `__CFBundleIdentifier` from the environment, falling back to `TERM_PROGRAM`, then `unknown` ([A-05](REVIEW.md#a-05)). The `ps` parent chain is for display only. Observed on a developer Mac: inside tmux, `TERM_PROGRAM` is `tmux` and the chain ends at `tmux`, but `__CFBundleIdentifier` still held the terminal's bundle id.
 - **Agent:** whether the parent chain (process names from `/bin/ps -o ppid=,comm= -p <pid>`, up to 8 levels) contains `claude`, `codex`, `cursor-agent`, `gemini`, `aider` or `goose`. Agent shells differ: the same terminal and tmux session gained `CLAUDE_CODE_MESSAGING_TOKEN` under Claude Code.
 - **Not Full Disk Access** ([A-06](REVIEW.md#a-06)). Revoking it is a recommended fix; putting it in the key would reset history at that moment. A change in Full Disk Access is reported as a diff event.
 
@@ -322,7 +322,7 @@ Also run `go vet` and `gofmt -l` in the test script. The whole suite should fini
 ### Take
 
 - **Data tables.** `SPECS` (about 30 credential files with capture patterns), `TOKEN_RX`, `REACH_TARGETS`, `AI_FILES`, `FIX` texts, `SKIP_DIRS`. Transcribe them. The patterns use no lookarounds or backreferences, so they are valid in Go's RE2 syntax; confirm each compiles. Add these while transcribing:
-  - History ([A-07](REVIEW.md#a-07)): `~/.zsh_sessions/*.history` (Apple Terminal's per-session files; the directory exists on Glenn's Mac), `~/.bash_sessions/*`, `~/.viminfo`.
+  - History ([A-07](REVIEW.md#a-07)): `~/.zsh_sessions/*.history` (Apple Terminal's per-session files; the directory was observed on a developer Mac), `~/.bash_sessions/*`, `~/.viminfo`.
   - `SPECS`, propagation class ([A-21](REVIEW.md#a-21)): `~/.yarnrc.yml` (`npmAuthToken`; also project-level copies in the sweep), `~/.bundle/config` (`BUNDLE_<HOST>: user:token`), `~/.config/git/credentials` (git's XDG credential store, same pattern as `.git-credentials`), `~/.config/glab-cli/config.yml` (`token:`).
   - Sweep filenames, service class: `config/master.key`, `config/credentials/*.key` (Rails). Whole-file value, presence-style fingerprint of the content.
   - Credentials embedded in URLs ([A-20](REVIEW.md#a-20)): one pattern, `[a-z][a-z0-9+.-]*://[^:/\s@]+:(<secret>[^@\s]+)@`, applied to environment values (including `*_URL`, which `ENV_SKIP` currently drops), shell files, dotenv files, and `.git/config` of every repository the sweep passes (the sweep skips `.git` otherwise). Class by host: GitHub, GitLab, npm or PyPI hosts are propagation; otherwise by variable name; otherwise generic.
@@ -359,10 +359,10 @@ Also run `go vet` and `gofmt -l` in the test script. The whole suite should fini
 
 Verified on Linux against a fixture home: detection of the original section 11 fixtures, placeholder and `node_modules` exclusion, the leak check, diffing, duplicate cross-referencing, SSH detection on synthetic key blobs, and the Keychain parser on one hand-written sample.
 
-Observed on macOS (Glenn's Mac, macOS 27, 2026-10-12; Glenn ran the prototype, agents saw only the terminal summary):
+Observed on macOS (a developer Mac, macOS 27, 2026-10-12; the maintainer ran the prototype, agents saw only the terminal summary):
 
-- `security dump-keychain -a` raised no prompt. 147 items. Most entries include partition lists and `mdat` ([R-07](REVIEW.md#r-07), [R-08](REVIEW.md#r-08)).
-- The Keychain added about 43 findings and 231 points, 3 of them worm vectors. Partition lists were not modelled, so 43 is an upper bound.
+- `security dump-keychain -a` raised no prompt. Most entries include partition lists and `mdat` ([R-07](REVIEW.md#r-07), [R-08](REVIEW.md#r-08)).
+- The Keychain added dozens of findings, some of them worm vectors. Partition lists were not modelled, so that is an upper bound.
 - `~/Library/Application Support/com.apple.TCC/` does not exist (`ENOENT`) from any terminal, so the prototype's Full Disk Access check printed `n/a`. Reports say the user TCC database moved to a protected location (section 13).
 - The `ps` chain ends at `tmux` (section 5, Context key).
 - No folder probe prompted, but the terminal used may have had Full Disk Access, so this says nothing about a terminal without it.
@@ -370,7 +370,7 @@ Observed on macOS (Glenn's Mac, macOS 27, 2026-10-12; Glenn ran the prototype, a
 
 ## 8. Milestones
 
-M0 and M1 are sequential and define the contracts. After M1, the M2 collector groups are independent. M3 and M4 can run alongside M2. Steps marked **Glenn** need his Mac.
+M0 and M1 are sequential and define the contracts. After M1, the M2 collector groups are independent. M3 and M4 can run alongside M2. Steps marked **maintainer** need a developer Mac.
 
 ### M0. Skeleton and guardrails
 
@@ -395,7 +395,7 @@ Each collector ships with fixture tests through `Env`.
 - 1Password CLI (decision 10): if `/Applications/1Password.app` exists and an `op` binary exists at `/opt/homebrew/bin/op` or `/usr/local/bin/op` (stat only, never executed), emit one finding: kind `op-cli`, class propagation (a vault usually holds publishing tokens), gate `windowed`, confidence low, fingerprint `op-cli`. Detail: "If the 1Password app's CLI integration is on, a script in a terminal that unlocked `op` in the last ~10 minutes can read the vault without a prompt." Unverified on macOS.
 - Context and reach: context key (section 5), `ps` chain for display, reach table with sizes under a per-target budget. Targets that need Full Disk Access (Mail, Messages, Safari) fail silently and never prompt, so they are always checked. TCC-protected folders (Desktop, Documents, Downloads, iCloud Drive, cloud storage, Photos, Contacts, Calendars, Notes) are checked only with `-probe-folders` or when Full Disk Access is `yes` ([A-36](REVIEW.md#a-36)). Full Disk Access is inferred ([R-03](REVIEW.md#r-03)): `yes` if any of Mail, Messages or Safari data is readable, `no` if all that exist are denied, `unknown` otherwise. When `yes`, emit the pinned tier-0 item: "Full Disk Access granted to <app>", fix "Remove it in System Settings → Privacy & Security → Full Disk Access unless something you run from this terminal needs it."
 - Prevention (decision 19), unscored, config files only: npm `ignore-scripts` in `~/.npmrc`; Yarn Berry `enableScripts` and `npmMinimalAgeGate` in `~/.yarnrc.yml`; pnpm `minimum-release-age` and `only-built-dependencies` in pnpm's global rc (`~/Library/Preferences/pnpm/rc`); Bun `~/.bunfig.toml` `[install]` settings. Report each as on, off, or not configured, with a fix line. Key names and paths are from memory at medium confidence; confirm each against the tool's documentation and cite it in a comment.
-- Keychain: parser and classifier. First build `-sanitize-keychain-sample`: it runs `security dump-keychain -a`, keeps structure and the fixed vocabulary (`class`, attribute tags, `authorizations`, `applications`, partition markers, `mdat` format), and replaces every attribute value, description, application path outside `/usr/bin`, `/bin`, `/usr/libexec`, `/System` and `/Library/Developer`, and partition value other than the `apple:`, `apple-tool:` and `teamid:` prefixes with a same-length placeholder. **Glenn** runs it, reads the output, and commits it to `testdata/`. Then write the classifier against that sample, including partition lists: a command-line tool counts as a silent reader only if its partition (`apple-tool:` for Apple-signed tools such as `/usr/bin/security`) is in the item's partition list. Record the observed partition format in a code comment ([R-07](REVIEW.md#r-07)).
+- Keychain: parser and classifier. First build `-sanitize-keychain-sample`: it runs `security dump-keychain -a`, keeps structure and the fixed vocabulary (`class`, attribute tags, `authorizations`, `applications`, partition markers, `mdat` format), and replaces every attribute value, description, application path outside `/usr/bin`, `/bin`, `/usr/libexec`, `/System` and `/Library/Developer`, and partition value other than the `apple:`, `apple-tool:` and `teamid:` prefixes with a same-length placeholder. **The maintainer** runs it, reads the output, and commits it to `testdata/`. Then write the classifier against that sample, including partition lists: a command-line tool counts as a silent reader only if its partition (`apple-tool:` for Apple-signed tools such as `/usr/bin/security`) is in the item's partition list. Record the observed partition format in a code comment ([R-07](REVIEW.md#r-07)).
 - Report via `html/template` with embedded CSS, written only for `-open` (section 5).
 
 Acceptance: the section 11 tables reproduced exactly, and the leak test extended to every fixture.
@@ -418,7 +418,7 @@ Many tools keep nothing readable on disk but hand the token to any caller who as
 
 Acceptance: fixture Keychain dumps plus configs produce the enriched findings above. Enrichment adds no findings and counts nothing twice; it may change an item's class, and so the total, where the class rules above differ from the plain Keychain heuristic, such as Bitbucket servers ([A-44](REVIEW.md#a-44)). The subprocess test confirms no helper is executed.
 
-### M5. macOS validation (Glenn)
+### M5. macOS validation (maintainer)
 
 Deliver build-from-source instructions (`CGO_ENABLED=0 go build -trimpath -o exposure-audit .`) and a checklist: run from every terminal he installs packages in, with and without a coding agent; note every macOS prompt; send back only the terminal summary.
 
@@ -427,12 +427,12 @@ Settled already (section 7): the dump does not prompt; partition lists and `mdat
 Still open; record the answers in code comments:
 
 - Does the Go parser handle the sanitized real dump?
-- With partitions modelled, how many of the prototype's ~43 silent items stay silent?
+- With partitions modelled, how many of the prototype's silent items stay silent?
 - Does the Full Disk Access inference agree with System Settings, per terminal?
 - Do protected-folder probes prompt, fail silently, or succeed in a terminal without Full Disk Access?
 - Which terminal's permissions does a shell in tmux get: the one that started the tmux server, or the one attached?
 - Does the 1Password detection match reality (is the CLI integration actually on)?
-- Items in the data-protection keychain are not in the login keychain dump. Decide with Glenn whether that matters, given that an unsigned process cannot read those items either.
+- Items in the data-protection keychain are not in the login keychain dump. Decide with the maintainer whether that matters, given that an unsigned process cannot read those items either.
 
 ### Later, not scheduled
 
@@ -440,7 +440,7 @@ Still open; record the answers in code comments:
 - Opt-in online verification of token validity and scope.
 - Signing, notarization, and distribution.
 
-## 9. Open questions for Glenn
+## 9. Open questions for the maintainer
 
 None block the MVP.
 
@@ -456,7 +456,7 @@ For each milestone or collector, return:
 - Test output, including the leak test and the dependency check.
 - What you could not verify and why. Expect "needs macOS" often.
 - Any invariant you had to bend, stated plainly, with the reason.
-- New questions for Glenn, separated so they are easy to find.
+- New questions for the maintainer, separated so they are easy to find.
 - Updated rows in `REVIEW.md`, in the same commit as the change.
 
 ## 11. Fixtures and expected results
@@ -507,7 +507,7 @@ Each is a separate fake home, so totals do not mix.
 
 ## 12. Keychain dump format, as the prototype assumes it
 
-Hand-written from memory of the format. Glenn's real dump confirmed partition lists and `mdat` are present but has not been inspected structurally; replace this with the sanitized sample from M2.
+Hand-written from memory of the format. A real dump confirmed partition lists and `mdat` are present but has not been inspected structurally; replace this with the sanitized sample from M2.
 
 ```
 keychain: "/Users/x/Library/Keychains/login.keychain-db"

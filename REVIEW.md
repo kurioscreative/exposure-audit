@@ -14,10 +14,10 @@ The handoff is the spec. This file records why the spec changed, what is still u
 | Status     | Meaning                                              |
 | ---------- | ---------------------------------------------------- |
 | `open`     | Raised, not yet in HANDOFF.md, no decision           |
-| `decide`   | Needs Glenn; the question is in HANDOFF §9 or, for rows added during the build, in the row itself |
+| `decide`   | Needs the maintainer; the question is in HANDOFF §9 or, for rows added during the build, in the row itself |
 | `spec`     | Written into HANDOFF.md, not built                   |
 | `built`    | Implemented, with a test that passes on Linux        |
-| `verified` | Built, and confirmed on Glenn's Mac                  |
+| `verified` | Built, and confirmed on a developer Mac              |
 | `dropped`  | Rejected; the reason is in the decision log          |
 
 Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the documents, **[macOS]** = plausible but unobserved, with confidence.
@@ -32,16 +32,16 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | Spec review                 | done        | —                                                               |
 | M0 skeleton and guardrails  | done        | —                                                               |
 | M1 core                     | done        | —                                                               |
-| M2 collector parity         | built       | Keychain classifier is provisional until Glenn's sanitized sample ([R-07](#r-07)) |
+| M2 collector parity         | built       | Keychain classifier is provisional until the maintainer's sanitized sample ([R-07](#r-07)) |
 | M3 matcher precision        | built       | —                                                               |
 | M4 helper inference         | built       | Provisional with the Keychain parser; [A-45](#a-45) |
-| M5 macOS validation (Go)    | ready       | Glenn                                                           |
+| M5 macOS validation (Go)    | ready       | Maintainer                                                      |
 | M6 content sweep            | post-MVP    | [Decision 20](HANDOFF.md#2-decisions-already-made)                                                     |
 
-### Glenn's to-do list
+### Maintainer to-do list
 
 - [ ] Check System Settings → Privacy & Security → Full Disk Access for Ghostty and every other terminal. The prototype cannot detect this on macOS 27. ([R-03](#r-03), [R-06](#r-06))
-- [ ] Find out what `CLAUDE_CODE_MESSAGING_TOKEN` authorizes ([HANDOFF §9 Q3](HANDOFF.md#9-open-questions-for-glenn)). ([R-05](#r-05))
+- [ ] Find out what `CLAUDE_CODE_MESSAGING_TOKEN` authorizes ([HANDOFF §9 Q3](HANDOFF.md#9-open-questions-for-the-maintainer)). ([R-05](#r-05))
 - [ ] Now: build (`CGO_ENABLED=0 go build -trimpath -o exposure-audit .`), run `./exposure-audit -sanitize-keychain-sample > testdata/keychain_real_sanitized.txt`, read it, commit it. The Keychain parser and M4 are refit against it. ([R-07](#r-07))
 - [ ] During M5: run the checklist from each terminal, with and without a coding agent. (A-28 and the M5 list)
 - [ ] Delete `~/.exposure-audit` left by the prototype once its report is no longer needed. ([A-27](#a-27))
@@ -71,7 +71,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | 2026-10-12 | Build commits go directly on main                                                               | —                | —          |
 | 2026-10-12 | Linux evidence for `built` comes from `./test.sh` in the `golang:1.26` Docker image              | —                | —          |
 | 2026-10-12 | An output withheld by the leak check exits 1                                                    | [18](HANDOFF.md#2-decisions-already-made) | [A-26](#a-26), [A-31](#a-31) |
-| 2026-10-12 | Build the Keychain parser and M4 against the §12 sample, then refit to Glenn's sanitized dump   | —                | [R-07](#r-07)       |
+| 2026-10-12 | Build the Keychain parser and M4 against the §12 sample, then refit to the maintainer's sanitized dump | —                | [R-07](#r-07)       |
 | 2026-10-12 | Accept the M3 entropy floor (3.0 bits/char) and word-shape rule                                 | —                | [A-43](#a-43)       |
 | 2026-10-12 | M4 enrichment may change class and total; it never adds findings or counts twice                | —                | [A-44](#a-44)       |
 | 2026-10-12 | Environment findings: fixed location per class                                                  | —                | [A-46](#a-46)       |
@@ -154,18 +154,19 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
 | <a id="a-66"></a>A-66 | A positional argument or a negative `-max-depth` printed the full help with no line naming the mistake, and an unknown flag's error sat above twenty lines of usage; a mistake now gets one line naming it and a pointer to `-h` | [verified] test | — | built |
+| <a id="a-67"></a>A-67 | With `-open`, the summary still said "run with -open for the full list", and the prompt then hung for the browser wait with no explanation; the summary now points at the report, and the wait is announced on stderr | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 
-Glenn ran the prototype; agents saw only the terminal summaries.
+The maintainer ran the prototype; agents saw only the terminal summaries.
 
 | ID   | Finding                                                                                                                 | Evidence           | HANDOFF        | Status   |
 | ---- | ----------------------------------------------------------------------------------------------------------------------- | ------------------ | -------------- | -------- |
-| <a id="r-01"></a>R-01 | Ranking was backwards: `.env` files with four or five cloud-named variables filled the top five; no worm vector made it | [verified]         | [§2 d8](HANDOFF.md#2-decisions-already-made), [§5](HANDOFF.md#5-architecture), [§11](HANDOFF.md#11-fixtures-and-expected-results) | built     |
-| <a id="r-02"></a>R-02 | Committed dotenv files should score lower                                                                               | Glenn's decision   | [§2 d9](HANDOFF.md#2-decisions-already-made), [§5](HANDOFF.md#5-architecture), [§11](HANDOFF.md#11-fixtures-and-expected-results) | built     |
+| <a id="r-01"></a>R-01 | Ranking was backwards: `.env` files with several cloud-named variables filled the top five; no worm vector made it | [verified]         | [§2 d8](HANDOFF.md#2-decisions-already-made), [§5](HANDOFF.md#5-architecture), [§11](HANDOFF.md#11-fixtures-and-expected-results) | built     |
+| <a id="r-02"></a>R-02 | Committed dotenv files should score lower                                                                               | Maintainer's decision | [§2 d9](HANDOFF.md#2-decisions-already-made), [§5](HANDOFF.md#5-architecture), [§11](HANDOFF.md#11-fixtures-and-expected-results) | built     |
 | <a id="r-03"></a>R-03 | The TCC.db check for Full Disk Access gives no result on macOS 27; infer it from Mail, Messages and Safari reach        | [verified]         | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to), [M2](HANDOFF.md#m2-collector-parity)         | built     |
 | <a id="r-04"></a>R-04 | macOS 27 reportedly protects some apps' `Application Support` folders; the prototype's "open" labels are unreliable     | [macOS] unofficial | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to), [§13](HANDOFF.md#13-references)        | built     |
-| <a id="r-05"></a>R-05 | Claude Code exports `CLAUDE_CODE_MESSAGING_TOKEN` to its shells; its scope is unknown                                   | [verified]         | [§2 d11](HANDOFF.md#2-decisions-already-made), [§9 Q3](HANDOFF.md#9-open-questions-for-glenn)  | built     |
+| <a id="r-05"></a>R-05 | Claude Code exports `CLAUDE_CODE_MESSAGING_TOKEN` to its shells; its scope is unknown                                   | [verified]         | [§2 d11](HANDOFF.md#2-decisions-already-made), [§9 Q3](HANDOFF.md#9-open-questions-for-the-maintainer)  | built     |
 | <a id="r-06"></a>R-06 | Full Disk Access on a terminal may be the most valuable fix, but it was outside the score                               | [spec]             | [§2 d12](HANDOFF.md#2-decisions-already-made), [§5](HANDOFF.md#5-architecture), [M2](HANDOFF.md#m2-collector-parity) | built     |
 | <a id="r-07"></a>R-07 | Real Keychain dumps include partition lists and `mdat`; model partitions and use `mdat` for rotation                    | [verified]         | [§5](HANDOFF.md#5-architecture), [M2](HANDOFF.md#m2-collector-parity)         | spec     |
-| <a id="r-08"></a>R-08 | `dump-keychain -a` raised no prompt; 147 items, about 43 classed silent before partitions are modelled                  | [verified]         | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to)             | verified |
+| <a id="r-08"></a>R-08 | `dump-keychain -a` raised no prompt; dozens of items classed silent before partitions are modelled                     | [verified]         | [§7](HANDOFF.md#7-what-to-take-from-the-prototype-and-what-not-to)             | verified |
