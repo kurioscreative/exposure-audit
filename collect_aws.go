@@ -16,7 +16,7 @@ var (
 )
 
 // ssoRefreshFix is for SSO caches holding a refresh token (decision 13).
-const ssoRefreshFix = "This cache holds an IAM Identity Center refresh token that mints new credentials for weeks. Run aws sso logout when you finish, and shorten the session duration in IAM Identity Center."
+const ssoRefreshFix = "This cache holds an IAM Identity Center refresh token that mints new credentials for weeks. Run `aws sso logout` when you finish, and shorten the session duration in IAM Identity Center."
 
 type awsCollector struct{}
 

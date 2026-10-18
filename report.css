@@ -28,3 +28,4 @@ th{color:var(--mute);font-weight:500;font-size:12px}td.n{font-variant-numeric:ta
 details{margin-top:8px}summary{cursor:pointer;color:var(--mute);font-size:13px}
 ul{padding-left:18px;margin:6px 0}li{margin:3px 0}
 .key{white-space:nowrap}
+code{font:.92em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--chip);border-radius:4px;padding:1px 4px}

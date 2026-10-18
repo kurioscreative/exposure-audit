@@ -67,9 +67,9 @@ func npmRows(env *Env) []PreventionRow {
 	kv := parseINI(readConfig(env, ".npmrc"))
 	return []PreventionRow{
 		row("npm", "ignore-scripts", boolState(kv, "ignore-scripts", true),
-			"Add ignore-scripts=true to ~/.npmrc and run the build scripts you need explicitly (npm rebuild <pkg>)."),
+			"Add `ignore-scripts=true` to `~/.npmrc` and run the build scripts you need explicitly (`npm rebuild <pkg>`)."),
 		row("npm", "min-release-age", ageState(kv, "min-release-age"),
-			"Add min-release-age=<days> to ~/.npmrc so new versions wait a few days before npm installs them."),
+			"Add `min-release-age=<days>` to `~/.npmrc` so new versions wait a few days before npm installs them."),
 	}
 }
 
@@ -82,12 +82,12 @@ func npmRows(env *Env) []PreventionRow {
 func yarnRows(env *Env) []PreventionRow {
 	kv := parseYAMLTop(readConfig(env, ".yarnrc.yml"))
 	scripts, fix := byDefault(boolState(kv, "enableScripts", false),
-		"Add enableScripts: false to ~/.yarnrc.yml and allow builds per package with dependenciesMeta.",
-		"Current Yarn blocks install scripts by default; add enableScripts: false to ~/.yarnrc.yml to be sure on older versions, and allow builds per package with dependenciesMeta.")
+		"Add `enableScripts: false` to `~/.yarnrc.yml` and allow builds per package with `dependenciesMeta`.",
+		"Current Yarn blocks install scripts by default; add `enableScripts: false` to `~/.yarnrc.yml` to be sure on older versions, and allow builds per package with `dependenciesMeta`.")
 	return []PreventionRow{
 		row("Yarn", "enableScripts", scripts, fix),
 		row("Yarn", "npmMinimalAgeGate", ageState(kv, "npmMinimalAgeGate"),
-			"Add npmMinimalAgeGate: 3d to ~/.yarnrc.yml so new versions wait before Yarn installs them."),
+			"Add `npmMinimalAgeGate: 3d` to `~/.yarnrc.yml` so new versions wait before Yarn installs them."),
 	}
 }
 
@@ -117,15 +117,15 @@ func pnpmRows(env *Env) []PreventionRow {
 	alias(kv, "dangerously-allow-all-builds", "dangerouslyAllowAllBuilds")
 	alias(kv, "minimum-release-age", "minimumReleaseAge")
 	age, ageFix := byDefault(ageState(kv, "minimumReleaseAge"),
-		"Set minimumReleaseAge (minutes, e.g. 4320) in pnpm's global config.yaml.",
-		"pnpm 11+ already waits 1 day; set minimumReleaseAge (minutes, e.g. 4320) in pnpm's global config.yaml to be sure on older versions or to wait longer.")
+		"Set `minimumReleaseAge` (minutes, e.g. `4320`) in pnpm's global `config.yaml`.",
+		"pnpm 11+ already waits 1 day; set `minimumReleaseAge` (minutes, e.g. `4320`) in pnpm's global `config.yaml` to be sure on older versions or to wait longer.")
 	scripts, scriptsFix := byDefault(boolState(kv, "ignoreScripts", true),
-		"Set ignoreScripts: true in pnpm's global config.yaml, or rely on allowBuilds to approve build scripts per package.",
-		"pnpm 10+ blocks dependency build scripts unless allowBuilds approves them; set ignoreScripts: true in pnpm's global config.yaml to be sure on older versions.")
+		"Set `ignoreScripts: true` in pnpm's global `config.yaml`, or rely on `allowBuilds` to approve build scripts per package.",
+		"pnpm 10+ blocks dependency build scripts unless `allowBuilds` approves them; set `ignoreScripts: true` in pnpm's global `config.yaml` to be sure on older versions.")
 	rows := []PreventionRow{row("pnpm", "ignoreScripts", scripts, scriptsFix)}
 	if boolState(kv, "dangerouslyAllowAllBuilds", false) == stateOff {
 		rows = append(rows, row("pnpm", "dangerouslyAllowAllBuilds", stateOff,
-			"Remove dangerouslyAllowAllBuilds and approve build scripts per package with allowBuilds."))
+			"Remove `dangerouslyAllowAllBuilds` and approve build scripts per package with `allowBuilds`."))
 	}
 	return append(rows, row("pnpm", "minimumReleaseAge", age, ageFix))
 }
@@ -140,12 +140,12 @@ func pnpmRows(env *Env) []PreventionRow {
 func bunRows(env *Env) []PreventionRow {
 	kv := parseTOMLSection(readConfig(env, ".bunfig.toml"), "install")
 	scripts, fix := byDefault(boolState(kv, "ignoreScripts", true),
-		"Add ignoreScripts = true under [install] in ~/.bunfig.toml.",
-		"Bun skips dependency lifecycle scripts by default, but its trusted list still runs them for popular packages; add ignoreScripts = true under [install] in ~/.bunfig.toml to close that and to be sure on older versions.")
+		"Add `ignoreScripts = true` under `[install]` in `~/.bunfig.toml`.",
+		"Bun skips dependency lifecycle scripts by default, but its trusted list still runs them for popular packages; add `ignoreScripts = true` under `[install]` in `~/.bunfig.toml` to close that and to be sure on older versions.")
 	return []PreventionRow{
 		row("Bun", "install.ignoreScripts", scripts, fix),
 		row("Bun", "install.minimumReleaseAge", ageState(kv, "minimumReleaseAge"),
-			"Add minimumReleaseAge = <seconds> under [install] in ~/.bunfig.toml (259200 is three days)."),
+			"Add `minimumReleaseAge = <seconds>` under `[install]` in `~/.bunfig.toml` (`259200` is three days)."),
 	}
 }
 

@@ -300,3 +300,17 @@ func TestLaunchedFromShowsAppName(t *testing.T) {
 		t.Errorf("pinned item %q", got)
 	}
 }
+
+// Backticked spans in fix text are code in the report and plain in the
+// terminal; everything else is still escaped.
+func TestFixTextCodeSpans(t *testing.T) {
+	if got := string(fixHTML("Run `npm rebuild <pkg>` & retry.")); got != "Run <code>npm rebuild &lt;pkg&gt;</code> &amp; retry." {
+		t.Errorf("report: %q", got)
+	}
+	s := &Snapshot{Findings: []Finding{fin(fnd("npm-token", "~/.npmrc", Propagation, "fp"))}}
+	s.Findings[0].Fix = "Set `ignore-scripts=true`."
+	s.Credentials, s.Items, s.Total = score(s.Findings)
+	if out := string(renderSummary(s, false)); !strings.Contains(out, "Fix: Set ignore-scripts=true.\n") {
+		t.Errorf("summary:\n%s", out)
+	}
+}

@@ -98,7 +98,7 @@ func renderSummary(s *Snapshot, open bool) []byte {
 		for _, l := range it.Locations {
 			fmt.Fprintf(&b, "       %s\n", l)
 		}
-		fmt.Fprintf(&b, "       Fix: %s\n", it.Fix)
+		fmt.Fprintf(&b, "       Fix: %s\n", strings.ReplaceAll(it.Fix, "`", ""))
 	}
 	if more := len(s.Items) - len(items); more > 0 {
 		if open {
@@ -372,7 +372,21 @@ func humanBytes(n int64) string {
 	return fmt.Sprintf("%.1f TB", f)
 }
 
-var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
+// fixHTML renders the `backticked` commands, paths and settings in fix text
+// as code, so the part to copy stands out. The text is escaped first.
+func fixHTML(fix string) template.HTML {
+	var b strings.Builder
+	for i, part := range strings.Split(fix, "`") {
+		part = template.HTMLEscapeString(part)
+		if i%2 == 1 {
+			part = "<code>" + part + "</code>"
+		}
+		b.WriteString(part)
+	}
+	return template.HTML(b.String())
+}
+
+var reportTmpl = template.Must(template.New("report").Funcs(template.FuncMap{"fix": fixHTML}).Parse(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Exposure Audit</title><style>{{.CSS}}</style></head>
@@ -396,7 +410,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 {{range .Locations}}<div class="loc">{{.}}</div>{{end}}
 <div class="chips"><span class="chip{{if .Hot}} hot{{end}}">{{.Tier}}</span><span class="chip">{{.Score}}</span>{{if gt .Secrets 1}}<span class="chip">{{.Secrets}} secrets</span>{{end}}</div>
 {{if .Detail}}<div>{{.Detail}}</div>{{end}}
-<div class="fix"><b>Fix:</b> {{.Fix}}</div></div>
+<div class="fix"><b>Fix:</b> {{fix .Fix}}</div></div>
 {{else}}<div class="card">Nothing found. Run it from the terminal you actually install packages from to be sure.</div>{{end}}
 {{if .MoreItems}}<div class="sub">{{.MoreItems}} more not shown here; every finding is listed under All findings below.</div>{{end}}
 
@@ -408,7 +422,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 
 <h2>Prevention</h2><div class="sub">Whether package managers run install scripts. Not included in the score.</div>
 <div class="card tw"><table><tr><th>Tool</th><th>Setting</th><th>State</th><th>Fix</th></tr>
-{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono key">{{.Setting}}</td><td><span class="chip{{if eq .State "on"}} cool{{else if eq .State "off"}} hot{{else if eq .State "not configured"}} warm{{end}}">{{.State}}</span></td><td>{{.Fix}}</td></tr>
+{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono key">{{.Setting}}</td><td><span class="chip{{if eq .State "on"}} cool{{else if eq .State "off"}} hot{{else if eq .State "not configured"}} warm{{end}}">{{.State}}</span></td><td>{{fix .Fix}}</td></tr>
 {{else}}<tr><td colspan="4">Not checked.</td></tr>{{end}}
 </table></div>
 
