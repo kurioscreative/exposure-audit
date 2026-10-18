@@ -189,6 +189,13 @@ func TestSummaryShowsDeltaAndItems(t *testing.T) {
 			t.Errorf("summary lacks %q:\n%s", want, r.stdout)
 		}
 	}
+	// Times show in the zone the tool ran in; an unchanged score says so
+	// rather than "+0.0".
+	fx.now = fx.now.Add(time.Minute).In(time.FixedZone("EDT", -4*3600))
+	r = fx.runApp([]Collector{staticCollector("files", nil, npm)})
+	if want := "(no change since 2026-10-12 05:31 EDT)"; !strings.Contains(r.stdout, want) {
+		t.Errorf("summary lacks %q:\n%s", want, r.stdout)
+	}
 }
 
 func TestKeychainNamesOnlyInLiveOutput(t *testing.T) {

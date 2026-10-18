@@ -193,6 +193,7 @@ func (a *App) Main(args []string) int {
 		Collectors:     res.Statuses,
 		Errors:         res.Errors,
 		Findings:       res.Findings,
+		zone:           a.Env.Now.Location(),
 	}
 	for _, c := range collectors {
 		// Only collectors that returned normally: a panicked one may still have

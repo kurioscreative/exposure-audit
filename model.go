@@ -142,6 +142,16 @@ type Snapshot struct {
 	Prevention     []PreventionRow   `json:"prevention,omitempty"`
 	Keychain       *KeychainStats    `json:"keychain,omitempty"`
 	Diff           *Diff             `json:"diff,omitempty"`
+
+	zone *time.Location // display only: history stays UTC
+}
+
+// stamp formats t for display in the zone the tool ran in.
+func (s *Snapshot) stamp(t time.Time) string {
+	if s.zone != nil {
+		t = t.In(s.zone)
+	}
+	return t.Format("2006-01-02 15:04 MST")
 }
 
 // ReachRow is one data-reach target: measured, not scored (decision 1).

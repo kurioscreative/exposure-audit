@@ -79,7 +79,11 @@ func renderSummary(s *Snapshot, open bool) []byte {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "Exposure score (lower is better): %.1f", s.Total)
 	if s.Diff != nil {
-		fmt.Fprintf(&b, "  (%+.1f since %s)", s.Diff.Delta, s.Diff.Previous.Format("2006-01-02 15:04 UTC"))
+		if s.Diff.Delta == 0 {
+			fmt.Fprintf(&b, "  (no change since %s)", s.stamp(s.Diff.Previous))
+		} else {
+			fmt.Fprintf(&b, "  (%+.1f since %s)", s.Diff.Delta, s.stamp(s.Diff.Previous))
+		}
 	}
 	fmt.Fprintf(&b, "\nFindings: %d · credentials: %d · worm vectors usable without a prompt: %d\n", len(s.Findings), len(s.Credentials), countTier(s, 1))
 	fmt.Fprintf(&b, "Launched from: %s\n", launchedFrom(s))
@@ -225,7 +229,7 @@ type reportView struct {
 func buildReportView(s *Snapshot) reportView {
 	v := reportView{
 		CSS:        template.CSS(reportCSS),
-		Time:       s.Time.UTC().Format("2006-01-02 15:04 UTC"),
+		Time:       s.stamp(s.Time),
 		Launched:   launchedFrom(s),
 		Score:      fmt.Sprintf("%.1f", s.Total),
 		Items:      displayItems(s, reportItems),
@@ -236,12 +240,15 @@ func buildReportView(s *Snapshot) reportView {
 		Notes:      collectorNotes(s),
 	}
 	if d := s.Diff; d != nil {
-		v.Delta = fmt.Sprintf("%+.1f", d.Delta)
-		v.DeltaClass = "down"
-		if d.Delta > 0 {
-			v.DeltaClass = "up"
+		switch {
+		case d.Delta > 0:
+			v.Delta, v.DeltaClass = fmt.Sprintf("%+.1f", d.Delta), "up"
+		case d.Delta < 0:
+			v.Delta, v.DeltaClass = fmt.Sprintf("%+.1f", d.Delta), "down"
+		default: // unchanged is not an improvement, so not green
+			v.Delta = "No change"
 		}
-		v.Since = d.Previous.Format("2006-01-02 15:04 UTC")
+		v.Since = s.stamp(d.Previous)
 		if d.FDANow != "" {
 			v.FDAChange = d.FDABefore + " → " + d.FDANow
 		}
