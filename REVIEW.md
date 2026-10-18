@@ -153,6 +153,7 @@ Evidence tags: **[verified]** = run and observed, **[spec]** = reasoned from the
 | <a id="a-62"></a>A-62 | The report's Changes list showed persisted `Change.Title` and `Location`, so a Keychain change read "login keychain item" plus a slot hash that appears nowhere else on the page | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-63"></a>A-63 | The report's All findings table followed persisted `Location` order, so Keychain rows showed live text but sat in salted slot-hash order | [verified] test | [§2 d16](HANDOFF.md#2-decisions-already-made) | built |
 | <a id="a-64"></a>A-64 | `makeItem` built an item's findings and locations from a map and sorted findings by hash-derived ID, so persisted `items[].findings` reordered when a secret rotated and the title and fix source fell back to an ID tie-break | [verified] test | — | built |
+| <a id="a-66"></a>A-66 | A positional argument or a negative `-max-depth` printed the full help with no line naming the mistake, and an unknown flag's error sat above twenty lines of usage; a mistake now gets one line naming it and a pointer to `-h` | [verified] test | — | built |
 
 ## Findings from the real run (2026-10-12)
 

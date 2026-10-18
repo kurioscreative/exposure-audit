@@ -62,13 +62,24 @@ func (a *App) parseFlags(args []string) (Options, error) {
 	fs.IntVar(&o.MaxDepth, "max-depth", 5, "depth limit for the .env sweep")
 	fs.BoolVar(&o.Version, "version", false, "print the version and exit")
 	fs.BoolVar(&o.Sanitize, devFlag, false, "print a sanitized login keychain dump for testdata/, then exit")
-	fs.Usage = func() { usage(a.Stderr, fs) }
-	if err := fs.Parse(args); err != nil {
+	// The full help is for -h; a mistake gets one line naming it, so the
+	// error is not buried above twenty lines of usage.
+	fs.Usage = func() {}
+	err := fs.Parse(args)
+	switch {
+	case errors.Is(err, flag.ErrHelp):
+		usage(a.Stderr, fs)
 		return o, err
+	case err == nil && fs.NArg() > 0:
+		err = fmt.Errorf("exposure-audit: unexpected argument %q; flags start with a dash, as in -open", fs.Arg(0))
+		fmt.Fprintln(a.Stderr, err)
+	case err == nil && o.MaxDepth < 0:
+		err = errors.New("exposure-audit: -max-depth must be 0 or more")
+		fmt.Fprintln(a.Stderr, err)
 	}
-	if fs.NArg() > 0 || o.MaxDepth < 0 {
-		fs.Usage()
-		return o, errors.New("bad arguments")
+	if err != nil { // the flag package has already printed its own errors
+		fmt.Fprintln(a.Stderr, "Run exposure-audit -h for usage.")
+		return o, err
 	}
 	// Roots are absolute: the sweep's protected-folder and home-level checks
 	// compare absolute paths (A-57). The shell leaves "~" after a comma alone.

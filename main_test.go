@@ -19,9 +19,11 @@ func TestHelpAndVersion(t *testing.T) {
 	if r := fx.runApp([]Collector{}, "-version"); r.code != 0 || r.stdout != "exposure-audit "+version+"\n" {
 		t.Errorf("-version: exit %d, %q", r.code, r.stdout)
 	}
-	for _, bad := range [][]string{{"-nope"}, {"extra"}} {
-		if r := fx.runApp([]Collector{}, bad...); r.code != 2 {
-			t.Errorf("%q: exit %d, want 2", bad, r.code)
+	// A mistake names itself in a line or two instead of repeating the help.
+	for bad, want := range map[string]string{"-nope": "-nope", "open": `"open"`, "-max-depth=-1": "-max-depth"} {
+		r := fx.runApp([]Collector{}, bad)
+		if r.code != 2 || !strings.Contains(r.stderr, want) || strings.Contains(r.stderr, "Flags:") {
+			t.Errorf("%q: exit %d, stderr %q", bad, r.code, r.stderr)
 		}
 	}
 	if len(fx.historyFiles()) != 0 {
