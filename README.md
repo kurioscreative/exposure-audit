@@ -25,7 +25,7 @@ Running it with no flags prints a summary in the terminal:
 ```text
 Exposure score (lower is better): 68.2  (-10.0 since 2026-10-12 09:30 UTC)
 Findings: 11 · credentials: 11 · worm vectors usable without a prompt: 4
-Launched from: iTerm.app (-zsh < iTerm2)
+Launched from: iTerm2 (-zsh < iTerm2)
 Full Disk Access: no
 
 Fix first:
