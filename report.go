@@ -118,7 +118,7 @@ func renderSummary(s *Snapshot, open bool) []byte {
 	if s.Diff != nil && s.Diff.FDANow != "" {
 		fmt.Fprintf(&b, "Full Disk Access changed: %s → %s\n", s.Diff.FDABefore, s.Diff.FDANow)
 	}
-	fmt.Fprintf(&b, "\nPrevention: %s\n", preventionLine(s))
+	fmt.Fprintf(&b, "\nPrevention: %s\n", preventionLine(s, open))
 	if notes := collectorNotes(s); len(notes) > 0 {
 		fmt.Fprintf(&b, "\nCollector notes: %s\n", strings.Join(notes, "; "))
 	}
@@ -148,8 +148,9 @@ func launchedFrom(s *Snapshot) string {
 
 // preventionLine is the one-line Prevention summary (decision 19). It counts
 // settings safe by default apart and names only the ones that need action,
-// grouped by tool; their fixes are in the -open report.
-func preventionLine(s *Snapshot) string {
+// grouped by tool; their fixes are in the -open report, which the line
+// points at unless open says it is already opening.
+func preventionLine(s *Snapshot, open bool) string {
 	if len(s.Prevention) == 0 {
 		return "not checked"
 	}
@@ -178,7 +179,11 @@ func preventionLine(s *Snapshot) string {
 	if len(gaps) == 0 {
 		return line
 	}
-	return line + " · to fix: " + strings.Join(gaps, ", ") + " (see -open)"
+	line += " · to fix: " + strings.Join(gaps, ", ")
+	if !open {
+		line += " (see -open)"
+	}
+	return line
 }
 
 // collectorNotes lists every collector that was not complete, with the

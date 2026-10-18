@@ -247,8 +247,12 @@ func TestSummaryPreventionLine(t *testing.T) {
 			r("pnpm", "ignoreScripts", stateOn), r("pnpm", "minimumReleaseAge", stateDefault),
 		}, "1 of 6 on, 2 safe by default · to fix: npm ignore-scripts and min-release-age, Yarn npmMinimalAgeGate (see -open)"},
 	} {
-		if got := preventionLine(&Snapshot{Prevention: c.rows}); got != c.want {
+		if got := preventionLine(&Snapshot{Prevention: c.rows}, false); got != c.want {
 			t.Errorf("got  %q\nwant %q", got, c.want)
+		}
+		// With -open the report is already open; the line does not point at it.
+		if got := preventionLine(&Snapshot{Prevention: c.rows}, true); strings.Contains(got, "-open") {
+			t.Errorf("-open run: %q", got)
 		}
 	}
 }
