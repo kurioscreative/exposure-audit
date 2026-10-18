@@ -215,6 +215,8 @@ type reportView struct {
 	DeltaClass string
 	Since      string
 	Tiles      []reportTile
+	FDA        string
+	FDAClass   string
 	Changes    []reportChange
 	FDAChange  string
 	Items      []displayItem
@@ -260,7 +262,14 @@ func buildReportView(s *Snapshot) reportView {
 		}
 		v.Tiles = append(v.Tiles, reportTile{fmt.Sprint(countTier(s, tier)), label})
 	}
-	v.Tiles = append(v.Tiles, reportTile{s.FullDiskAccess, "Full Disk Access inherited"})
+	// Beside the score rather than a sixth tile, which sat alone on a row.
+	v.FDA = map[string]string{"yes": "inherited", "no": "not inherited"}[s.FullDiskAccess]
+	if v.FDA == "" {
+		v.FDA = s.FullDiskAccess
+	}
+	if s.FullDiskAccess == "yes" {
+		v.FDAClass = "up"
+	}
 
 	for _, r := range s.Reach {
 		rr := reportReach{ReachRow: r}
@@ -352,7 +361,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 <div class="hero"><div><div class="sub">Exposure score (lower is better)</div>
 <div class="score">{{.Score}}</div>
 {{if .Delta}}<div class="delta {{.DeltaClass}}">{{.Delta}} since {{.Since}}</div>{{end}}
-</div></div>
+</div><div><div class="sub">Full Disk Access</div><div class="fda {{.FDAClass}}">{{.FDA}}</div></div></div>
 <div class="tiles">{{range .Tiles}}<div class="tile"><b>{{.Value}}</b><span>{{.Label}}</span></div>{{end}}</div>
 
 {{if or .Changes .FDAChange}}<h2>Changes since last run</h2><div class="card">

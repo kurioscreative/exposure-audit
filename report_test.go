@@ -75,7 +75,7 @@ func TestReportRendersEverySection(t *testing.T) {
 		"<h1>Exposure audit</h1>",
 		"Changes since last run",
 		"Full Disk Access</b> unknown → yes",
-		"Fix these first",
+		"Fix these first", `<div class="fda up">inherited</div>`,
 		"1. Full Disk Access granted to unknown",
 		"Worm vector",
 		"login keychain: gh:github.com (octo-account)", // live output may name Keychain items
