@@ -83,6 +83,12 @@ The weight is then multiplied by:
 Go 1.26 or later. Standard library only: no dependencies, no cgo.
 
 ```sh
+go install github.com/kurioscreative/exposure-audit@latest   # installs exposure-audit into $(go env GOPATH)/bin
+```
+
+Or from a clone:
+
+```sh
 CGO_ENABLED=0 go build -trimpath -o exposure-audit .
 ```
 
@@ -96,15 +102,15 @@ Run it from the terminal (or IDE terminal) you actually install packages from. D
 ./exposure-audit -json      # print the snapshot as JSON
 ```
 
-| Flag             | Effect                                                                         |
-| ---------------- | ------------------------------------------------------------------------------ |
-| `-open`          | Write the HTML report, open it in your browser, then delete it                 |
-| `-json`          | Print the snapshot as JSON instead of the summary                              |
-| `-probe-folders` | Also measure TCC-protected folders such as Documents (may show a macOS prompt) |
-| `-skip-keychain` | Skip the login Keychain access-list check                                      |
-| `-version`       | Print the version and exit                                                     |
+| Flag             | Effect                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| `-open`          | Write the HTML report, open it in your browser, then delete it                            |
+| `-json`          | Print the snapshot as JSON instead of the summary                                         |
+| `-probe-folders` | Also measure TCC-protected folders such as Documents (may show a macOS prompt)            |
+| `-skip-keychain` | Skip the login Keychain access-list check                                                 |
+| `-version`       | Print the version and exit                                                                |
 | `-roots a,b`     | Directories for the `.env` sweep (default: your home); `~` expands, a missing one exits 2 |
-| `-max-depth n`   | Depth limit for the `.env` sweep (default 5)                                   |
+| `-max-depth n`   | Depth limit for the `.env` sweep (default 5)                                              |
 
 Exit codes: `0` complete run; `1` report produced but a collector failed, timed out or was partial (or an output was withheld by the leak check); `2` usage error or unusable state directory. `-h` and `-version` exit `0`.
 
@@ -139,3 +145,7 @@ docs/screenshots.sh    # regenerate the README screenshots (macOS, Google Chrome
 ```
 
 Tests run the whole tool in-process against a temporary fake home, with fake tokens built at runtime. Never point the tests or the binary at someone else's home directory. [`HANDOFF.md`](HANDOFF.md) has the design and decisions; [`REVIEW.md`](REVIEW.md) tracks review findings.
+
+## Security and license
+
+Report vulnerabilities privately; see [`SECURITY.md`](SECURITY.md). Released under the [MIT license](LICENSE).
