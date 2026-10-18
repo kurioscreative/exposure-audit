@@ -236,7 +236,7 @@ func (a *App) emit(snap *Snapshot, opts Options, stateDir string, salt []byte) e
 	if err != nil {
 		return err
 	}
-	stdout := renderSummary(snap)
+	stdout := renderSummary(snap, opts.Open)
 	if opts.JSON {
 		stdout = append(history, '\n')
 	}
@@ -285,6 +285,8 @@ func (a *App) openReport(stateDir string, report []byte) {
 		fmt.Fprintln(a.Stderr, "exposure-audit: could not open the report")
 		return
 	}
+	// Without this line the prompt seems to hang for no reason.
+	fmt.Fprintf(a.Stderr, "Opened the report in your browser; it is deleted in %s.\n", a.OpenWait)
 	time.Sleep(a.OpenWait)
 }
 

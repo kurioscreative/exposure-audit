@@ -73,7 +73,9 @@ func findingsByID(s *Snapshot) map[string]*Finding {
 	return byID
 }
 
-func renderSummary(s *Snapshot) []byte {
+// renderSummary is the terminal output. open says the HTML report is being
+// opened, so the summary points there rather than at -open.
+func renderSummary(s *Snapshot, open bool) []byte {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "Exposure score (lower is better): %.1f", s.Total)
 	if s.Diff != nil {
@@ -95,7 +97,11 @@ func renderSummary(s *Snapshot) []byte {
 		fmt.Fprintf(&b, "       Fix: %s\n", it.Fix)
 	}
 	if more := len(s.Items) - len(items); more > 0 {
-		fmt.Fprintf(&b, "  …and %d more: run with -open for the full list\n", more)
+		if open {
+			fmt.Fprintf(&b, "  …and %d more in the report\n", more)
+		} else {
+			fmt.Fprintf(&b, "  …and %d more: run with -open for the full list\n", more)
+		}
 	}
 	if groups := changeGroups(s); len(groups) > 0 {
 		b.WriteString("\nChanges since last run:\n")

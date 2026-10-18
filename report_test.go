@@ -68,6 +68,9 @@ func TestReportRendersEverySection(t *testing.T) {
 	if r.code != 0 {
 		t.Fatalf("exit %d: %s", r.code, r.stderr)
 	}
+	if !strings.Contains(r.stderr, "Opened the report in your browser") {
+		t.Errorf("-open waits without saying why: %q", r.stderr)
+	}
 	for _, want := range []string{
 		"<h1>Exposure audit</h1>",
 		"Changes since last run",
@@ -206,7 +209,7 @@ func TestSummaryNamesChangesAndHiddenItems(t *testing.T) {
 		{Modified, fs[0].ID, "gh-token", "~/f0"},
 	}}}
 	s.Credentials, s.Items, s.Total = score(s.Findings)
-	out := string(renderSummary(s))
+	out := string(renderSummary(s, false))
 	for _, want := range []string{
 		"Exposure score (lower is better): ",
 		"  …and 2 more: run with -open for the full list\n",
@@ -216,8 +219,11 @@ func TestSummaryNamesChangesAndHiddenItems(t *testing.T) {
 			t.Errorf("summary lacks %q:\n%s", want, out)
 		}
 	}
+	if out := string(renderSummary(s, true)); !strings.Contains(out, "  …and 2 more in the report\n") {
+		t.Errorf("-open run still points at -open:\n%s", out)
+	}
 	s.Items = s.Items[:summaryItems]
-	if out := string(renderSummary(s)); strings.Contains(out, "more:") {
+	if out := string(renderSummary(s, false)); strings.Contains(out, "more:") {
 		t.Errorf("nothing hidden, but summary says so:\n%s", out)
 	}
 }
