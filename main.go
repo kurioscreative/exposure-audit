@@ -100,6 +100,7 @@ func (a *App) parseFlags(args []string) (Options, error) {
 		if o.ProbeFolders || !a.Env.resolvesIntoProtected(p) {
 			if fi, err := os.Stat(p); err != nil || !fi.IsDir() {
 				fmt.Fprintf(a.Stderr, "exposure-audit: -roots: %s is not a directory\n", r)
+				fmt.Fprintln(a.Stderr, "Run exposure-audit -h for usage.")
 				return o, errors.New("bad -roots")
 			}
 		}
