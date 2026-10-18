@@ -169,7 +169,7 @@ type ReachRow struct {
 type PreventionRow struct {
 	Tool    string `json:"tool"`    // npm, Yarn, pnpm, Bun
 	Setting string `json:"setting"` // e.g. ignore-scripts
-	State   string `json:"state"`   // on, off, not configured
+	State   string `json:"state"`   // on, off, not configured, default
 	Fix     string `json:"fix,omitempty"`
 }
 

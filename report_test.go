@@ -112,7 +112,7 @@ func TestSummaryPreventionAndNotes(t *testing.T) {
 	partial := testCollector{"dotenv", func(context.Context, *Env) ([]Finding, error) { return nil, ErrPartial }}
 	r := fx.runApp(append(cs, partial))
 	for _, want := range []string{
-		"Prevention: 1 of 2 settings on · to fix: Yarn enableScripts (see -open)",
+		"Prevention: 1 of 2 on · to fix: Yarn enableScripts (see -open)",
 		"Collector notes: dotenv: partial",
 		"Full Disk Access: yes",
 	} {
@@ -228,22 +228,43 @@ func TestSummaryNamesChangesAndHiddenItems(t *testing.T) {
 	}
 }
 
-func TestSummaryPreventionAllOn(t *testing.T) {
-	s := &Snapshot{Prevention: []PreventionRow{{Tool: "npm", Setting: "ignore-scripts", State: stateOn}}}
-	if got := preventionLine(s); got != "all 1 on" {
-		t.Errorf("got %q", got)
+// Settings safe by default are counted apart, not listed to fix, and the
+// rest are grouped by tool.
+func TestSummaryPreventionLine(t *testing.T) {
+	r := func(tool, setting, state string) PreventionRow {
+		return PreventionRow{Tool: tool, Setting: setting, State: state}
+	}
+	for _, c := range []struct {
+		rows []PreventionRow
+		want string
+	}{
+		{[]PreventionRow{r("npm", "ignore-scripts", stateOn)}, "all 1 on"},
+		{[]PreventionRow{r("npm", "ignore-scripts", stateOn), r("Yarn", "enableScripts", stateDefault)},
+			"1 of 2 on, 1 safe by default"},
+		{[]PreventionRow{
+			r("npm", "ignore-scripts", stateNotConfigured), r("npm", "min-release-age", stateOff),
+			r("Yarn", "enableScripts", stateDefault), r("Yarn", "npmMinimalAgeGate", stateNotConfigured),
+			r("pnpm", "ignoreScripts", stateOn), r("pnpm", "minimumReleaseAge", stateDefault),
+		}, "1 of 6 on, 2 safe by default · to fix: npm ignore-scripts and min-release-age, Yarn npmMinimalAgeGate (see -open)"},
+	} {
+		if got := preventionLine(&Snapshot{Prevention: c.rows}); got != c.want {
+			t.Errorf("got  %q\nwant %q", got, c.want)
+		}
 	}
 }
 
 func TestReportCopy(t *testing.T) {
 	s := &Snapshot{
-		Keychain:   &KeychainStats{Total: 1, Silent: 1},
-		Prevention: []PreventionRow{{Tool: "npm", Setting: "ignore-scripts", State: stateOff, Fix: "x"}},
-		Diff:       &Diff{Changes: []Change{{Resolved, "gone", "npm auth token", "~/.npmrc"}}},
+		Keychain: &KeychainStats{Total: 1, Silent: 1},
+		Prevention: []PreventionRow{
+			{Tool: "npm", Setting: "ignore-scripts", State: stateOff, Fix: "x"},
+			{Tool: "Yarn", Setting: "enableScripts", State: stateDefault, Fix: "y"},
+		},
+		Diff: &Diff{Changes: []Change{{Resolved, "gone", "npm auth token", "~/.npmrc"}}},
 	}
 	out, _ := renderReport(s)
 	r := string(out)
-	for _, want := range []string{"1 password item: ", "usable without asking you", `<span class="chip hot">off</span>`} {
+	for _, want := range []string{"1 password item: ", "usable without asking you", `<span class="chip hot">off</span>`, `<span class="chip">default</span>`} {
 		if !strings.Contains(r, want) {
 			t.Errorf("report lacks %q", want)
 		}

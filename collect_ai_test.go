@@ -131,13 +131,23 @@ func TestPreventionAllTools(t *testing.T) {
 	}
 }
 
+// An absent key is "default" where the current release protects without it,
+// and "not configured" elsewhere; both keep a fix.
 func TestPreventionNothingConfigured(t *testing.T) {
 	fx := newFixture(t)
 	r := fx.runApp([]Collector{&preventionCollector{}}, "-json")
 	s := decodeSnapshot(t, r.stdout)
+	defaults := map[string]bool{
+		"Yarn enableScripts": true, "pnpm minimumReleaseAge": true,
+		"pnpm ignoreScripts": true, "Bun install.ignoreScripts": true,
+	}
 	for _, row := range s.Prevention {
-		if row.State != stateNotConfigured || !strings.Contains(row.Fix, " ") {
-			t.Errorf("row %+v", row)
+		want := stateNotConfigured
+		if defaults[row.Tool+" "+row.Setting] {
+			want = stateDefault
+		}
+		if row.State != want || !strings.Contains(row.Fix, " ") {
+			t.Errorf("row %+v, want state %q", row, want)
 		}
 	}
 }
@@ -160,8 +170,8 @@ func TestPreventionPnpmAllowAllBuildsOnlyWhenTrue(t *testing.T) {
 	}
 }
 
-// Newer pnpm and Yarn default to the protective value, so an absent key's
-// fix says so; an explicit off keeps the plain fix.
+// Newer pnpm, Yarn and Bun default to the protective value, so an absent
+// key's fix says so; an explicit off stays off with the plain fix.
 func TestPreventionFixMentionsNewerDefaults(t *testing.T) {
 	fixFor := func(s Snapshot, tool, setting string) string {
 		for _, r := range s.Prevention {
@@ -179,11 +189,20 @@ func TestPreventionFixMentionsNewerDefaults(t *testing.T) {
 	if f := fixFor(s, "Yarn", "enableScripts"); !strings.Contains(f, "by default") {
 		t.Errorf("Yarn absent fix %q", f)
 	}
+	if f := fixFor(s, "Bun", "install.ignoreScripts"); !strings.Contains(f, "trusted list") {
+		t.Errorf("Bun absent fix %q", f)
+	}
 
 	fx = newFixture(t)
-	fx.write(".config/pnpm/config.yaml", "minimumReleaseAge: 0\n")
+	fx.write(".config/pnpm/config.yaml", "minimumReleaseAge: 0\nignoreScripts: false\n")
 	fx.write(".yarnrc.yml", "enableScripts: true\n")
+	fx.write(".bunfig.toml", "[install]\nignoreScripts = false\n")
 	s, _ = fx.runJSON([]Collector{&preventionCollector{}})
+	for _, k := range [][2]string{{"pnpm", "minimumReleaseAge"}, {"pnpm", "ignoreScripts"}, {"Yarn", "enableScripts"}, {"Bun", "install.ignoreScripts"}} {
+		if got := preventionState(s, k[0], k[1]); got != stateOff {
+			t.Errorf("explicit %s %s = %q, want off", k[0], k[1], got)
+		}
+	}
 	if f := fixFor(s, "pnpm", "minimumReleaseAge"); f == "" || strings.Contains(f, "already") {
 		t.Errorf("pnpm off fix %q", f)
 	}

@@ -146,23 +146,39 @@ func launchedFrom(s *Snapshot) string {
 	return out
 }
 
-// preventionLine is the one-line Prevention summary (decision 19). It names
-// only the settings that need action; their fixes are in the -open report.
+// preventionLine is the one-line Prevention summary (decision 19). It counts
+// settings safe by default apart and names only the ones that need action,
+// grouped by tool; their fixes are in the -open report.
 func preventionLine(s *Snapshot) string {
 	if len(s.Prevention) == 0 {
 		return "not checked"
 	}
+	on, safe, lastTool := 0, 0, ""
 	var gaps []string
 	for _, p := range s.Prevention {
-		if p.State != stateOn {
+		switch {
+		case p.State == stateOn:
+			on++
+		case p.State == stateDefault:
+			safe++
+		case p.Tool == lastTool: // rows arrive grouped by tool
+			gaps[len(gaps)-1] += " and " + p.Setting
+		default:
 			gaps = append(gaps, p.Tool+" "+p.Setting)
+			lastTool = p.Tool
 		}
 	}
-	if len(gaps) == 0 {
-		return fmt.Sprintf("all %d on", len(s.Prevention))
+	if on == len(s.Prevention) {
+		return fmt.Sprintf("all %d on", on)
 	}
-	return fmt.Sprintf("%d of %d settings on · to fix: %s (see -open)",
-		len(s.Prevention)-len(gaps), len(s.Prevention), strings.Join(gaps, ", "))
+	line := fmt.Sprintf("%d of %d on", on, len(s.Prevention))
+	if safe > 0 {
+		line += fmt.Sprintf(", %d safe by default", safe)
+	}
+	if len(gaps) == 0 {
+		return line
+	}
+	return line + " · to fix: " + strings.Join(gaps, ", ") + " (see -open)"
 }
 
 // collectorNotes lists every collector that was not complete, with the
@@ -387,7 +403,7 @@ var reportTmpl = template.Must(template.New("report").Parse(`<!doctype html>
 
 <h2>Prevention</h2><div class="sub">Whether package managers run install scripts. Not included in the score.</div>
 <div class="card tw"><table><tr><th>Tool</th><th>Setting</th><th>State</th><th>Fix</th></tr>
-{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono key">{{.Setting}}</td><td><span class="chip {{if eq .State "on"}}cool{{else if eq .State "off"}}hot{{else}}warm{{end}}">{{.State}}</span></td><td>{{.Fix}}</td></tr>
+{{range .Prevention}}<tr><td>{{.Tool}}</td><td class="mono key">{{.Setting}}</td><td><span class="chip{{if eq .State "on"}} cool{{else if eq .State "off"}} hot{{else if eq .State "not configured"}} warm{{end}}">{{.State}}</span></td><td>{{.Fix}}</td></tr>
 {{else}}<tr><td colspan="4">Not checked.</td></tr>{{end}}
 </table></div>
 
