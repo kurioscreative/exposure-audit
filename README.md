@@ -44,6 +44,8 @@ Fix first:
 Changes since last run:
   resolved: API keys in an AI tool or MCP config (~/.cursor/mcp.json)
   modified: npm auth token (~/.npmrc)
+
+Prevention: 0 of 8 on, 4 safe by default · to fix: npm ignore-scripts and min-release-age, Yarn npmMinimalAgeGate, Bun install.minimumReleaseAge (see -open)
 ```
 
 ## What it checks
@@ -56,7 +58,7 @@ Changes since last run:
 - **Login Keychain:** items whose access list lets `/usr/bin/security` (or any app) read them without a prompt. It reads access lists only, never item values. It also checks whether git credential helpers hand out tokens without a prompt, inferred from config and the Keychain.
 - **Context:** which app launched the shell, whether a coding agent is in the parent process chain, and whether the terminal has Full Disk Access.
 - **Data reach (not scored):** whether Documents, Downloads, iCloud Drive, Mail, Messages, browser profiles, Slack and similar folders are readable, with sizes.
-- **Prevention (not scored):** whether npm, Yarn, pnpm and Bun run install scripts and enforce a minimum release age.
+- **Prevention (not scored):** whether npm, Yarn, pnpm and Bun run install scripts and enforce a minimum release age. Each setting is on, off, not configured, or default (not set, but the tool's current release already protects).
 
 ## Scoring
 
