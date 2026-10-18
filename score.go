@@ -188,7 +188,7 @@ func firstOr(s []string) string {
 	return s[0]
 }
 
-const fdaFix = "Remove it in System Settings → Privacy & Security → Full Disk Access unless something you run from this terminal needs it."
+const fdaFix = "Remove it in System Settings > Privacy & Security > Full Disk Access unless something you run from this terminal needs it."
 
 // pinnedFDAItem is the unscored tier-0 item (decision 12).
 func pinnedFDAItem(app string) Item {
